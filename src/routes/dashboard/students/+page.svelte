@@ -11,6 +11,7 @@
 		type StudentFormData 
 	} from '$lib/api/students';
 	import { Modal } from '$lib/ui/modal';
+	import { Plus, Loader, Users, Edit, Trash2, AlertCircle } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	// State using $state
@@ -202,9 +203,7 @@
 				</p>
 			</div>
 			<button class="btn variant-filled-primary" onclick={openAddModal}>
-				<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-				</svg>
+				<Plus class="w-4 h-4 mr-2" />
 				Add Student
 			</button>
 		</div>
@@ -213,17 +212,12 @@
 		<div class="card p-6">
 			{#if loading}
 				<div class="flex items-center justify-center py-12">
-					<svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-					</svg>
+					<Loader class="animate-spin h-8 w-8 text-primary-600" />
 					<span class="ml-2 text-surface-600 dark:text-surface-400">Loading students...</span>
 				</div>
 			{:else if students.length === 0}
 				<div class="text-center py-12">
-					<svg class="w-12 h-12 text-surface-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-					</svg>
+					<Users class="w-12 h-12 text-surface-400 mx-auto mb-4" />
 					<h3 class="text-lg font-medium text-surface-900 dark:text-surface-50 mb-2">
 						No students found
 					</h3>
@@ -269,18 +263,14 @@
 												onclick={() => openEditModal(student)}
 												aria-label="Edit student"
 											>
-												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-												</svg>
+												<Edit class="w-4 h-4" />
 											</button>
 											<button 
 												class="btn btn-sm variant-ghost-error" 
 												onclick={() => openDeleteModal(student)}
 												aria-label="Delete student"
 											>
-												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-												</svg>
+												<Trash2 class="w-4 h-4" />
 											</button>
 										</div>
 									</td>
@@ -327,10 +317,7 @@
 			</button>
 			<button type="submit" class="btn variant-filled-primary" disabled={submitting}>
 				{#if submitting}
-					<svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-					</svg>
+					<Loader class="animate-spin h-4 w-4 mr-2" />
 					Creating...
 				{:else}
 					Create Student
@@ -374,10 +361,7 @@
 				</button>
 				<button type="submit" class="btn variant-filled-primary" disabled={submitting}>
 					{#if submitting}
-						<svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-						</svg>
+						<Loader class="animate-spin h-4 w-4 mr-2" />
 						Updating...
 					{:else}
 						Update Student
@@ -398,9 +382,7 @@
 	>
 		<div class="flex items-start gap-4 mb-6">
 			<div class="flex-shrink-0 w-10 h-10 bg-error-100 dark:bg-error-900/20 rounded-full flex items-center justify-center">
-				<svg class="w-5 h-5 text-error-600 dark:text-error-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
-				</svg>
+				<AlertCircle class="w-5 h-5 text-error-600 dark:text-error-400" />
 			</div>
 			<div class="flex-1">
 				<p class="text-surface-900 dark:text-surface-50 font-medium mb-1">
@@ -418,10 +400,7 @@
 				</button>
 				<button type="button" class="btn variant-filled-error" onclick={handleDeleteStudent} disabled={submitting}>
 					{#if submitting}
-						<svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-						</svg>
+						<Loader class="animate-spin h-4 w-4 mr-2" />
 						Deleting...
 					{:else}
 						Delete Student

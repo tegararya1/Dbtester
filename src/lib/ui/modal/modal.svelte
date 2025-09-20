@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { X } from 'lucide-svelte';
 
 	interface Props {
 		open?: boolean;
@@ -48,7 +49,7 @@
 </script>
 
 {#if open}
-	<div 
+	<div
 		class="fixed inset-0 z-50 flex items-center justify-center p-4"
 		role="dialog"
 		aria-modal="true"
@@ -56,18 +57,15 @@
 		onclick={handleBackdropClick}
 		onkeydown={handleKeydown}
 	>
-		<!-- Backdrop with blur effect -->
 		<div class="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
-		
-		<!-- Modal content -->
-		<div 
-			class="relative w-full {sizeClasses[size]} transform transition-all duration-200 ease-out"
-		>
-			<!-- Card container -->
-			<div class="bg-white dark:bg-surface-800 rounded-xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10">
-				<!-- Header -->
+		<div class="relative w-full {sizeClasses[size]} transform transition-all duration-200 ease-out">
+			<div
+				class="bg-white dark:bg-surface-800 rounded-xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+			>
 				{#if title || showCloseButton}
-					<div class="flex items-center justify-between p-6 border-b border-surface-200 dark:border-surface-700">
+					<div
+						class="flex items-center justify-between p-6 border-b border-surface-200 dark:border-surface-700"
+					>
 						{#if title}
 							<h2 class="text-xl font-semibold text-surface-900 dark:text-surface-50">
 								{title}
@@ -75,23 +73,19 @@
 						{:else}
 							<div></div>
 						{/if}
-						
+
 						{#if showCloseButton}
-							<button 
+							<button
 								type="button"
 								class="p-1 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
 								onclick={closeModal}
 								aria-label="Close modal"
 							>
-								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-								</svg>
+								<X class="w-5 h-5" />
 							</button>
 						{/if}
 					</div>
 				{/if}
-				
-				<!-- Body -->
 				<div class="p-6">
 					{@render children?.()}
 				</div>
