@@ -4,12 +4,38 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
     import { ModeToggle } from '$lib/ui/mode-toggle';
-	import { Loader, LayoutDashboard, Users, LogOut } from 'lucide-svelte';
+	import { Loader, LayoutDashboard, Users, LogOut, PanelLeftOpen, PanelLeftClose, X } from 'lucide-svelte';
+	import { useMobile } from '$lib/hooks';
 
 	let { children } = $props();
 
 	// Reactive authentication state
 	let authState = $state($authStore);
+
+	// Mobile detection hook
+	const { isMobile } = useMobile();
+
+	// Sidebar state management
+	let sidebarOpen = $state(true);
+
+	// Auto-close sidebar on mobile when isMobile changes
+	$effect(() => {
+		if ($isMobile) {
+			sidebarOpen = false;
+		}
+	});
+
+	// Toggle sidebar
+	const toggleSidebar = () => {
+		sidebarOpen = !sidebarOpen;
+	};
+
+	// Close sidebar (for mobile backdrop)
+	const closeSidebar = () => {
+		if ($isMobile) {
+			sidebarOpen = false;
+		}
+	};
 
 	onMount(() => {
 		const unsubscribe = authStore.subscribe(state => {
@@ -59,12 +85,44 @@
 {:else if shouldShowDashboard}
 	<!-- Dashboard layout with sidebar -->
 	<div class="h-screen flex bg-surface-50 dark:bg-surface-900">
+		<!-- Backdrop overlay for mobile -->
+		{#if $isMobile && sidebarOpen}
+			<div 
+				class="fixed inset-0 bg-black/50 z-20 lg:hidden"
+				onclick={closeSidebar}
+				onkeydown={(e) => e.key === 'Escape' && closeSidebar()}
+				role="button"
+				tabindex="-1"
+				aria-label="Close sidebar"
+			></div>
+		{/if}
+
 		<!-- Sidebar -->
-		<div class="w-64 bg-surface-100 dark:bg-surface-800 border-r border-surface-200 dark:border-surface-700 flex flex-col">
+		<div class="
+			{sidebarOpen ? 'translate-x-0' : $isMobile ? '-translate-x-full' : 'hidden'}
+			{$isMobile ? 'fixed' : 'relative'}
+			{sidebarOpen || $isMobile ? 'w-64' : 'w-0'}
+			bg-surface-100 dark:bg-surface-800 border-r border-surface-200 dark:border-surface-700 
+			flex flex-col transition-all duration-300 ease-in-out z-30 h-full
+			{!sidebarOpen && !$isMobile ? 'border-r-0' : ''}
+		">
 			<!-- Header -->
 			<div class="p-4 border-b border-surface-200 dark:border-surface-700">
-				<h1 class="text-xl font-bold text-surface-900 dark:text-surface-50">Damayanti</h1>
-				<p class="text-sm text-surface-600 dark:text-surface-400">Dashboard</p>
+				<div class="flex items-center justify-between">
+					<div>
+						<h1 class="text-xl font-bold text-surface-900 dark:text-surface-50">Damayanti</h1>
+						<p class="text-sm text-surface-600 dark:text-surface-400">Dashboard</p>
+					</div>
+					{#if $isMobile}
+						<button
+							onclick={toggleSidebar}
+							class="p-2 rounded-lg text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+							aria-label="Close sidebar"
+						>
+							<X class="w-5 h-5" />
+						</button>
+					{/if}
+				</div>
 			</div>
 			
 			<!-- Navigation -->
@@ -119,24 +177,26 @@
 		</div>
 
 		<!-- Main content area -->
-		<div class="flex-1 flex flex-col overflow-hidden">
+		<div class="
+			flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out
+			{$isMobile ? 'w-full' : sidebarOpen ? 'ml-0' : 'w-full'}
+		">
 			<!-- Top bar -->
 			<div class="bg-white dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 px-6 py-4">
 				<div class="flex items-center justify-between">
-					<div>
-						<h1 class="text-2xl font-bold text-surface-900 dark:text-surface-50">
-							{#if page.url.pathname === '/dashboard'}
-								Dashboard
-							{:else if page.url.pathname === '/dashboard/students'}
-								Students
-							{:else if page.url.pathname === '/dashboard/containers'}
-								Containers
-							{:else if page.url.pathname === '/dashboard/reports'}
-								Reports
+					<div class="flex items-center space-x-4">
+						<!-- Sidebar toggle button -->
+						<button
+							onclick={toggleSidebar}
+							class="p-2 rounded-lg text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+							aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+						>
+							{#if sidebarOpen}
+								<PanelLeftClose class="w-5 h-5" />
 							{:else}
-								Dashboard
+								<PanelLeftOpen class="w-5 h-5" />
 							{/if}
-						</h1>
+						</button>
 					</div>
 					
 					<!-- Quick actions -->
