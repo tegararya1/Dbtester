@@ -190,10 +190,10 @@
 	<title>Students - Damayanti Dashboard</title>
 </svelte:head>
 
-<div class="p-6">
+<div class="py-6">
 	<div class="max-w-7xl mx-auto">
 		<!-- Header -->
-		<div class="flex justify-between items-center mb-6">
+		<div class="flex justify-between items-center mb-6 px-4">
 			<div>
 				<h1 class="text-3xl font-bold text-surface-900 dark:text-surface-50 mb-2">
 					Students
@@ -202,14 +202,14 @@
 					Manage student records and information
 				</p>
 			</div>
-			<button class="btn variant-filled-primary" onclick={openAddModal}>
+			<button class="btn preset-outlined-primary-500 hover:scale-105" onclick={openAddModal}>
 				<Plus class="w-4 h-4 mr-2" />
 				Add Student
 			</button>
 		</div>
 
 		<!-- Students table -->
-		<div class="card p-6">
+		<div class="card py-6 px-2">
 			{#if loading}
 				<div class="flex items-center justify-center py-12">
 					<Loader class="animate-spin h-8 w-8 text-primary-600" />
@@ -259,14 +259,14 @@
 									<td class="p-4 text-right">
 										<div class="flex items-center justify-end gap-2">
 											<button 
-												class="btn btn-sm variant-ghost" 
+												class="btn btn-sm hover:scale-105" 
 												onclick={() => openEditModal(student)}
 												aria-label="Edit student"
 											>
 												<Edit class="w-4 h-4" />
 											</button>
 											<button 
-												class="btn btn-sm variant-ghost-error" 
+												class="btn btn-sm preset-tonal-error hover:scale-105" 
 												onclick={() => openDeleteModal(student)}
 												aria-label="Delete student"
 											>
@@ -315,7 +315,7 @@
 			<button type="button" class="btn variant-ghost" onclick={closeAllModals} disabled={submitting}>
 				Cancel
 			</button>
-			<button type="submit" class="btn variant-filled-primary" disabled={submitting}>
+			<button type="submit" class="btn preset-filled-primary-500" disabled={submitting}>
 				{#if submitting}
 					<Loader class="animate-spin h-4 w-4 mr-2" />
 					Creating...
@@ -359,7 +359,7 @@
 				<button type="button" class="btn variant-ghost" onclick={closeAllModals} disabled={submitting}>
 					Cancel
 				</button>
-				<button type="submit" class="btn variant-filled-primary" disabled={submitting}>
+				<button type="submit" class="btn preset-filled-primary-500" disabled={submitting}>
 					{#if submitting}
 						<Loader class="animate-spin h-4 w-4 mr-2" />
 						Updating...
@@ -398,7 +398,7 @@
 				<button type="button" class="btn variant-ghost" onclick={closeAllModals} disabled={submitting}>
 					Cancel
 				</button>
-				<button type="button" class="btn variant-filled-error" onclick={handleDeleteStudent} disabled={submitting}>
+				<button type="button" class="btn preset-filled-error-500" onclick={handleDeleteStudent} disabled={submitting}>
 					{#if submitting}
 						<Loader class="animate-spin h-4 w-4 mr-2" />
 						Deleting...
