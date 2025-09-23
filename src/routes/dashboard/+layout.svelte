@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
     import { ModeToggle } from '$lib/ui/mode-toggle';
-	import { Loader, LayoutDashboard, Users, LogOut, PanelLeftOpen, PanelLeftClose, X } from 'lucide-svelte';
+	import { Loader, LayoutDashboard, Users, LogOut, PanelLeftOpen, PanelLeftClose, X, Package } from 'lucide-svelte';
 	import { useMobile } from '$lib/hooks';
 
 	let { children } = $props();
@@ -70,6 +70,11 @@
 			href: '/dashboard/students',
 			label: 'Students',
 			icon: Users
+		},
+		{
+			href: '/dashboard/containers',
+			label: 'Containers',
+			icon: Package
 		}
 	];
 </script>

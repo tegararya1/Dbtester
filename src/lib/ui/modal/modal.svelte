@@ -36,7 +36,8 @@
 	}
 
 	function handleBackdropClick(event: MouseEvent) {
-		if (closeOnBackdropClick && event.target === event.currentTarget) {
+		// Check if the click was on the backdrop (not on the modal content)
+		if (closeOnBackdropClick && (event.target as HTMLElement).classList.contains('modal-backdrop')) {
 			closeModal();
 		}
 	}
@@ -50,17 +51,20 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center p-4"
+		class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop"
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
 		onclick={handleBackdropClick}
 		onkeydown={handleKeydown}
 	>
-		<div class="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
+		<!-- Modal content -->
 		<div class="relative w-full {sizeClasses[size]} transform transition-all duration-200 ease-out">
 			<div
 				class="bg-white dark:bg-surface-800 rounded-xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => e.stopPropagation()}
+				role="none"
 			>
 				{#if title || showCloseButton}
 					<div
@@ -93,3 +97,10 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.modal-backdrop {
+		background: rgba(0, 0, 0, 0.2);
+		backdrop-filter: blur(4px);
+	}
+</style>
