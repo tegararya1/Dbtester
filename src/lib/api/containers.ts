@@ -7,16 +7,12 @@ import type { ApiResponse, Pagination } from './client';
 export interface Container {
 	id: string;
 	code: string;
-	location: string;
-	student_id: string;
 	created_at: string;
 	modified_at: string;
 }
 
 export interface ContainerFormData {
 	code: string;
-	location: string;
-	student_id: string;
 }
 
 export interface ContainersListResponse {
@@ -32,14 +28,6 @@ export const validateContainerForm = (data: ContainerFormData): Record<string, s
 
 	if (!data.code.trim()) {
 		errors.code = 'Container code is required';
-	}
-
-	if (!data.location.trim()) {
-		errors.location = 'Container location is required';
-	}
-
-	if (!data.student_id.trim()) {
-		errors.student_id = 'Student is required';
 	}
 
 	return errors;

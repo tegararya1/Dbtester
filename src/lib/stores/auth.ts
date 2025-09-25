@@ -27,8 +27,39 @@ interface AuthResponse {
 	access_token: string;
 }
 
-const API_BASE_URL = 'https://damayanti-api.vercel.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const TOKEN_KEY = 'access_token';
+
+/**
+ * Get access token from localStorage
+ */
+function getAccessToken(): string | null {
+	if (!browser) return null;
+	return localStorage.getItem(TOKEN_KEY);
+}
+
+/**
+ * Clear tokens from localStorage
+ */
+function clearTokens(): void {
+	if (browser) {
+		localStorage.removeItem(TOKEN_KEY);
+	}
+}
+
+/**
+ * Check if JWT token is expired
+ */
+function isTokenExpired(token: string): boolean {
+	try {
+		const payload = JSON.parse(atob(token.split('.')[1]));
+		const currentTime = Date.now() / 1000;
+		return payload.exp < currentTime;
+	} catch (error) {
+		console.error('Error parsing token:', error);
+		return true;
+	}
+}
 
 // Initial state
 const initialState: AuthState = {
@@ -45,7 +76,7 @@ function createAuthStore() {
 	// Initialize store with token from localStorage
 	const init = () => {
 		if (browser) {
-			const savedToken = localStorage.getItem(TOKEN_KEY);
+			const savedToken = getAccessToken();
 			if (savedToken) {
 				update(state => ({
 					...state,
@@ -64,16 +95,30 @@ function createAuthStore() {
 	// Validate token by making an authenticated request
 	const validateToken = async (token: string) => {
 		try {
-			// Since there's no user profile endpoint, we'll just assume the token is valid
-			// In a real app, you'd verify the token with the server
+			// Check if token is expired
+			if (isTokenExpired(token)) {
+				throw new Error('Token expired');
+			}
+			
 			update(state => ({
 				...state,
 				isAuthenticated: true,
 				loading: false
 			}));
 		} catch (error) {
-			// Token is invalid, clear it
-			logout();
+			// Token is invalid or expired, clear it and redirect
+			clearTokens();
+			set({
+				isAuthenticated: false,
+				user: null,
+				token: null,
+				loading: false
+			});
+
+			// Redirect to login page if we're in a browser
+			if (browser && typeof window !== 'undefined') {
+				window.location.href = '/';
+			}
 		}
 	};
 
@@ -127,9 +172,7 @@ function createAuthStore() {
 
 	// Logout function
 	const logout = () => {
-		if (browser) {
-			localStorage.removeItem(TOKEN_KEY);
-		}
+		clearTokens();
 		
 		set({
 			isAuthenticated: false,
@@ -169,6 +212,21 @@ function createAuthStore() {
 
 // Export the store
 export const authStore = createAuthStore();
+
+/**
+ * Check if user is authenticated (has valid access token)
+ * @returns true if authenticated, false otherwise
+ */
+export function isAuthenticated(): boolean {
+	try {
+		const token = getAccessToken();
+		if (!token) return false;
+		return !isTokenExpired(token);
+	} catch (error) {
+		console.error('Error checking authentication:', error);
+		return false;
+	}
+}
 
 // Helper function to get current auth state
 function get<T>(store: { subscribe: (fn: (value: T) => void) => () => void }): T {

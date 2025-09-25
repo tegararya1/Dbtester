@@ -19,7 +19,7 @@
 			authState = state;
 			
 			// Redirect if already authenticated
-			if (state.isAuthenticated && !state.loading) {
+			if (!state.loading && state.isAuthenticated) {
 				goto('/dashboard');
 			}
 		});
@@ -139,7 +139,7 @@
 				<!-- Login Button -->
 				<button 
 					type="submit" 
-					class="btn variant-filled-primary w-full rounded-xl py-3 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:transform-none disabled:shadow-lg"
+					class="btn preset-filled-primary-500 w-full rounded-xl py-3 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:transform-none disabled:shadow-lg"
 					disabled={!isFormValid || loading}
 				>
 					{#if loading}
@@ -161,7 +161,7 @@
 		<!-- Footer -->
 		<div class="text-center mt-8">
 			<p class="text-sm text-surface-500 dark:text-surface-400">
-				© 2025 Damayanti. All rights reserved.
+				© {new Date().getFullYear()} Damayanti. All rights reserved.
 			</p>
 		</div>
 	</div>

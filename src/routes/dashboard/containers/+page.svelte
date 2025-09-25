@@ -10,10 +10,8 @@
 		type Container,
 		type ContainerFormData
 	} from '$lib/api/containers';
-	import { getStudents, type Student } from '$lib/api/students';
 	import { Modal } from '$lib/ui/modal';
 	import { DataTable } from '$lib/ui/datatable';
-	import { Combobox } from '@skeletonlabs/skeleton-svelte';
 	import { Plus, Loader, Package, Edit, Trash2, AlertCircle } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -36,24 +34,11 @@
 	// Form data
 	let formData = $state<ContainerFormData>({
 		code: '',
-		location: '',
-		student_id: ''
 	});
 
 	// Form validation
 	let formErrors = $state<Record<string, string>>({});
 	let submitting = $state(false);
-
-	// Student combobox data
-	interface StudentComboboxData {
-		label: string;
-		value: string;
-		student: Student;
-	}
-	
-	let students = $state<Student[]>([]);
-	let studentComboboxData = $state<StudentComboboxData[]>([]);
-	let selectedStudentIds = $state<string[]>([]);
 
 	// Reactive authentication state
 	let authState = $state($authStore);
@@ -66,26 +51,7 @@
 	// Fetch containers on mount
 	onMount(() => {
 		fetchContainers({ limit: 25, offset: 0 });
-		fetchStudents();
-	});
-
-	// Fetch students from API
-	const fetchStudents = async () => {
-		try {
-			const response = await getStudents();
-			if (response.data) {
-				students = response.data.students || [];
-				// Transform students data for combobox
-				studentComboboxData = students.map(student => ({
-					label: student.full_name,
-					value: student.id,
-					student: student
-				}));
-			}
-		} catch (err) {
-			console.error('Failed to load students:', err);
-		}
-	};
+	}); 
 
 	// Fetch containers from API
 	const fetchContainers = async (params?: { limit?: number; offset?: number }) => {
@@ -214,11 +180,8 @@
 		currentContainer = container;
 		formData = {
 			code: container.code,
-			location: container.location,
-			student_id: container.student_id
 		};
 		formErrors = {};
-		selectedStudentIds = container.student_id ? [container.student_id] : [];
 		showEditModal = true;
 	};
 
@@ -232,12 +195,9 @@
 	const resetForm = () => {
 		formData = {
 			code: '',
-			location: '',
-			student_id: ''
 		};
 		formErrors = {};
 		currentContainer = null;
-		selectedStudentIds = [];
 	};
 
 	// Open add modal
@@ -311,13 +271,6 @@
 					`
 				},
 				{
-					key: 'location',
-					label: 'Location',
-					sortable: true,
-					sortType: 'string',
-					render: (container) => `<span class="text-surface-600 dark:text-surface-400">${container.location}</span>`
-				},
-				{
 					key: 'created_at',
 					label: 'Created',
 					sortable: true,
@@ -370,67 +323,6 @@
 					<p class="text-error-500 text-sm mt-1">{formErrors.code}</p>
 				{/if}
 			</div>
-
-			<!-- Location -->
-			<div>
-				<label for="add-location" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-					Location *
-				</label>
-				<input
-					id="add-location"
-					type="text"
-					bind:value={formData.location}
-					class="input w-full {formErrors.location ? 'input-error' : ''}"
-					placeholder="Enter container location (e.g., Warehouse A, Section 1)"
-					required
-				/>
-				{#if formErrors.location}
-					<p class="text-error-500 text-sm mt-1">{formErrors.location}</p>
-				{/if}
-			</div>
-
-			<!-- Student Selection -->
-			<div>
-				<label for="add-student_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-					Student *
-				</label>
-				<Combobox
-					data={studentComboboxData}
-					value={selectedStudentIds}
-					onValueChange={(e: { value: string[] }) => {
-						selectedStudentIds = e.value;
-						formData.student_id = e.value[0] || '';
-						// Clear error when student is selected
-						if (formErrors.student_id && e.value.length > 0) {
-							formErrors.student_id = '';
-						}
-					}}
-					label=""
-					placeholder="Select a student..."
-					inputGroupBase="relative"
-					inputGroupInput="input w-full pr-10"
-					inputGroupButton="absolute right-2 top-1/2 -translate-y-1/2 p-1"
-					contentBackground="bg-surface-50 dark:bg-surface-800"
-					contentBase="border border-surface-300 dark:border-surface-600 shadow-lg rounded-base"
-					contentMaxHeight="max-h-64"
-					optionBase="px-3 py-2 cursor-pointer text-left w-full"
-					optionHover="bg-surface-50 dark:bg-surface-700 rounded-base"
-					optionFocus="bg-primary-100 dark:bg-primary-900/20"
-					optionActive="bg-primary-500 text-white"
-				>
-					{#snippet item(item: StudentComboboxData)}
-						<div class="flex w-full justify-between space-x-2">
-							<span>{item.label}</span>
-							<span class="text-sm text-surface-500">
-								{new Date(item.student.created_at).toLocaleDateString()}
-							</span>
-						</div>
-					{/snippet}
-				</Combobox>
-				{#if formErrors.student_id}
-					<p class="text-error-500 text-sm mt-1">{formErrors.student_id}</p>
-				{/if}
-			</div>
 		</div>
 
 		<div class="flex justify-end gap-3 mt-6">
@@ -476,67 +368,6 @@
 						<p class="text-error-500 text-sm mt-1">{formErrors.code}</p>
 					{/if}
 				</div>
-
-				<!-- Location -->
-				<div>
-					<label for="edit-location" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-						Location *
-					</label>
-					<input
-						id="edit-location"
-						type="text"
-						bind:value={formData.location}
-						class="input w-full {formErrors.location ? 'input-error' : ''}"
-						placeholder="Enter container location"
-						required
-					/>
-					{#if formErrors.location}
-						<p class="text-error-500 text-sm mt-1">{formErrors.location}</p>
-					{/if}
-				</div>
-
-				<!-- Student Selection -->
-				<div>
-					<label for="edit-student_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
-						Student *
-					</label>
-					<Combobox
-						zIndex="999"
-						data={studentComboboxData}
-						value={selectedStudentIds}
-						onValueChange={(e: { value: string[] }) => {
-							selectedStudentIds = e.value;
-							formData.student_id = e.value[0] || '';
-							if (formErrors.student_id && e.value.length > 0) {
-								formErrors.student_id = '';
-							}
-						}}
-						label=""
-						placeholder="Select a student..."
-						inputGroupBase="relative"
-						inputGroupInput="input w-full pr-10"
-						inputGroupButton="absolute right-2 top-1/2 -translate-y-1/2 p-1"
-						contentBackground="bg-surface-50 dark:bg-surface-800"
-						contentBase="border border-surface-300 dark:border-surface-600 shadow-lg rounded-container-token mt-1"
-						contentMaxHeight="max-h-64"
-						optionBase="px-3 py-2 cursor-pointer text-left w-full"
-						optionHover="bg-surface-100 dark:bg-surface-700"
-						optionFocus="bg-primary-100 dark:bg-primary-900/20"
-						optionActive="bg-primary-500 text-white"
-					>
-						{#snippet item(item: StudentComboboxData)}
-							<div class="flex w-full justify-between space-x-2">
-								<span>{item.label}</span>
-								<span class="text-sm text-surface-500">
-									{new Date(item.student.created_at).toLocaleDateString()}
-								</span>
-							</div>
-						{/snippet}
-					</Combobox>
-					{#if formErrors.student_id}
-						<p class="text-error-500 text-sm mt-1">{formErrors.student_id}</p>
-					{/if}
-				</div>
 			</div>
 
 			<div class="flex justify-end gap-3 mt-6">
@@ -573,7 +404,7 @@
 					Are you sure you want to delete this container?
 				</p>
 				<p class="text-surface-600 dark:text-surface-400 text-sm mb-4">
-					<strong>{currentContainer.code}</strong> ({currentContainer.location}) will be permanently removed from the system. This action cannot be undone.
+					<strong>{currentContainer.code}</strong> will be permanently removed from the system. This action cannot be undone.
 				</p>
 			</div>
 		</div>
