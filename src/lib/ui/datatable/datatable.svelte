@@ -1,5 +1,15 @@
 <script lang="ts">
-	import { Loader, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-svelte';
+	import {
+		Loader,
+		ChevronUp,
+		ChevronDown,
+		ChevronsUpDown,
+		ChevronLeft,
+		ChevronRight,
+		ChevronsLeft,
+		ChevronsRight
+	} from 'lucide-svelte';
+	import { useMobile } from '$lib/hooks';
 
 	// Generic types for the datatable
 	interface DataTableColumn<T = any> {
@@ -77,6 +87,9 @@
 		pageSizeOptions = [10, 25, 50, 100]
 	}: Props = $props();
 
+	// Mobile detection hook
+	const { isMobile } = useMobile();
+
 	// Sorting state
 	let sortState = $state<SortState>({
 		column: defaultSort?.column || null,
@@ -93,7 +106,7 @@
 			return;
 		}
 
-		const column = columns.find(col => col.key === sortState.column);
+		const column = columns.find((col) => col.key === sortState.column);
 		if (!column?.sortable) {
 			sortedData = data;
 			return;
@@ -142,13 +155,13 @@
 	// Calculate pagination info
 	const getPaginationInfo = () => {
 		if (!pagination || !showPagination) return null;
-		
+
 		const totalPages = Math.ceil(pagination.total / pagination.limit);
 		const startItem = pagination.offset + 1;
 		const endItem = Math.min(pagination.offset + pagination.limit, pagination.total);
 		const startPage = Math.max(1, paginationState.currentPage - 2);
 		const endPage = Math.min(totalPages, paginationState.currentPage + 2);
-		
+
 		return {
 			currentPage: paginationState.currentPage,
 			totalPages,
@@ -164,7 +177,7 @@
 	// Handle pagination
 	const handlePageChange = (newPage: number) => {
 		if (!onPageChange || !pagination) return;
-		
+
 		const newOffset = (newPage - 1) * paginationState.pageSize;
 		onPageChange(newPage, paginationState.pageSize);
 		paginationState.currentPage = newPage;
@@ -172,7 +185,7 @@
 
 	const handlePageSizeChange = (newPageSize: number) => {
 		if (!onPageChange) return;
-		
+
 		paginationState.pageSize = newPageSize;
 		paginationState.currentPage = 1;
 		onPageChange(1, newPageSize);
@@ -200,7 +213,7 @@
 	// Get sort icon for column header
 	const getSortIcon = (column: DataTableColumn) => {
 		if (!column.sortable) return null;
-		
+
 		if (sortState.column === column.key) {
 			return sortState.direction === 'asc' ? ChevronUp : ChevronDown;
 		}
@@ -210,11 +223,11 @@
 	// Get header classes for sortable columns
 	const getHeaderClasses = (column: DataTableColumn) => {
 		const baseClasses = `text-${column.align || 'left'} p-4 font-medium text-surface-900 dark:text-surface-50`;
-		
+
 		if (column.sortable) {
 			return `${baseClasses} cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-600 transition-colors select-none`;
 		}
-		
+
 		return baseClasses;
 	};
 
@@ -277,13 +290,17 @@
 							</th>
 						{/each}
 						{#if actions.length > 0}
-							<th class="text-right p-4 font-medium text-surface-900 dark:text-surface-50">Actions</th>
+							<th class="text-right p-4 font-medium text-surface-900 dark:text-surface-50"
+								>Actions</th
+							>
 						{/if}
 					</tr>
 				</thead>
 				<tbody>
 					{#each sortedData as item}
-						<tr class="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50">
+						<tr
+							class="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50"
+						>
 							{#each columns as column}
 								<td class="p-4 text-{column.align || 'left'}">
 									{#if column.render}
@@ -300,7 +317,7 @@
 									<div class="flex items-center justify-end gap-2">
 										{#each actions as action}
 											{@const IconComponent = action.icon}
-											<button 
+											<button
 												class={getActionVariant(action.variant)}
 												onclick={() => action.onClick(item)}
 												aria-label={action.ariaLabel || action.label}
@@ -316,40 +333,35 @@
 				</tbody>
 			</table>
 		</div>
-		
+
 		<!-- Pagination Controls -->
 		{#if showPagination && pagination}
 			{@const paginationInfo = getPaginationInfo()}
 			{#if paginationInfo}
-				<div class="flex items-center justify-between p-4 border-t border-surface-200 dark:border-surface-700">
+				<div
+					class="{$isMobile ? 'flex-col space-y-4' : 'flex'} items-center justify-between p-4 border-t border-surface-200 dark:border-surface-700"
+				>
 					<!-- Page size selector and info -->
-					<div class="flex items-center gap-4">
-						<div class="flex items-center gap-2">
-							<span class="text-sm text-surface-600 dark:text-surface-400">Show</span>
-							<select 
-								class="select select-sm w-20"
-								value={paginationState.pageSize}
-								onchange={(e) => {
-									const target = e.target as HTMLSelectElement;
-									handlePageSizeChange(Number(target.value));
-								}}
-							>
-								{#each pageSizeOptions as option}
-									<option value={option}>{option}</option>
-								{/each}
-							</select>
-							<span class="text-sm text-surface-600 dark:text-surface-400">per page</span>
-						</div>
-						
-						<div class="text-sm text-surface-600 dark:text-surface-400">
-							Showing {paginationInfo.startItem}-{paginationInfo.endItem} of {paginationInfo.totalItems}
-						</div>
+					<div class="flex-col items-center gap-4">
+						<span class="text-sm text-surface-600 dark:text-surface-400">Items per page</span>
+						<select
+							class="select select-sm w-16"
+							value={paginationState.pageSize}
+							onchange={(e) => {
+								const target = e.target as HTMLSelectElement;
+								handlePageSizeChange(Number(target.value));
+							}}
+						>
+							{#each pageSizeOptions as option}
+								<option value={option}>{option}</option>
+							{/each}
+						</select>
 					</div>
-					
+
 					<!-- Navigation controls -->
-					<div class="flex items-center gap-2">
+					<div class="{$isMobile ? 'flex-wrap' : 'flex'} flex items-center gap-2">
 						<!-- First page button -->
-						<button 
+						<button
 							class="btn btn-sm variant-ghost-surface"
 							disabled={paginationState.currentPage === 1}
 							onclick={() => handlePageChange(1)}
@@ -357,9 +369,9 @@
 						>
 							<ChevronsLeft class="w-4 h-4" />
 						</button>
-						
+
 						<!-- Previous page button -->
-						<button 
+						<button
 							class="btn btn-sm variant-ghost-surface"
 							disabled={paginationState.currentPage === 1}
 							onclick={() => handlePageChange(paginationState.currentPage - 1)}
@@ -367,43 +379,42 @@
 						>
 							<ChevronLeft class="w-4 h-4" />
 						</button>
-						
+
 						<!-- Page numbers -->
 						{#if paginationInfo.startPage > 1}
-							<button 
-								class="btn btn-sm variant-ghost-surface"
-								onclick={() => handlePageChange(1)}
-							>
+							<button class="btn btn-sm variant-ghost-surface" onclick={() => handlePageChange(1)}>
 								1
 							</button>
 							{#if paginationInfo.startPage > 2}
 								<span class="text-surface-400">...</span>
 							{/if}
 						{/if}
-						
+
 						{#each Array.from({ length: paginationInfo.endPage - paginationInfo.startPage + 1 }, (_, i) => paginationInfo.startPage + i) as page}
-							<button 
-								class="btn btn-sm {page === paginationState.currentPage ? 'variant-filled-primary' : 'variant-ghost-surface'}"
+							<button
+								class="btn btn-sm {page === paginationState.currentPage
+									? 'variant-filled-primary'
+									: 'variant-ghost-surface'}"
 								onclick={() => handlePageChange(page)}
 							>
 								{page}
 							</button>
 						{/each}
-						
+
 						{#if paginationInfo.endPage < paginationInfo.totalPages}
 							{#if paginationInfo.endPage < paginationInfo.totalPages - 1}
 								<span class="text-surface-400">...</span>
 							{/if}
-							<button 
+							<button
 								class="btn btn-sm variant-ghost-surface"
 								onclick={() => handlePageChange(paginationInfo.totalPages)}
 							>
 								{paginationInfo.totalPages}
 							</button>
 						{/if}
-						
+
 						<!-- Next page button -->
-						<button 
+						<button
 							class="btn btn-sm variant-ghost-surface"
 							disabled={paginationState.currentPage === paginationInfo.totalPages}
 							onclick={() => handlePageChange(paginationState.currentPage + 1)}
@@ -411,9 +422,9 @@
 						>
 							<ChevronRight class="w-4 h-4" />
 						</button>
-						
+
 						<!-- Last page button -->
-						<button 
+						<button
 							class="btn btn-sm variant-ghost-surface"
 							disabled={paginationState.currentPage === paginationInfo.totalPages}
 							onclick={() => handlePageChange(paginationInfo.totalPages)}
