@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ApiResponse } from './client';
+import type { ApiResponse, Pagination } from './client';
 
 /**
  * Student data types
@@ -17,6 +17,7 @@ export interface StudentFormData {
 
 export interface StudentsListResponse {
 	students: Student[];
+	pagination?: Pagination;
 }
 
 /**
@@ -39,15 +40,28 @@ export class StudentsApi {
 	/**
 	 * Fetch all students
 	 */
-	static async getStudents(): Promise<ApiResponse<StudentsListResponse>> {
-		const response = await apiClient.get<{ data: StudentsListResponse }>('/students');
-		
+	static async getStudents(params?: {
+		limit?: number;
+		offset?: number;
+	}): Promise<ApiResponse<StudentsListResponse>> {
+		const queryParams = new URLSearchParams();
+
+		if (params?.limit) {
+			queryParams.append('limit', params.limit.toString());
+		}
+		if (params?.offset) {
+			queryParams.append('offset', params.offset.toString());
+		}
+
+		const url = `/students${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+		const response = await apiClient.get<{ data: StudentsListResponse }>(url);
+
 		if (response.data?.data) {
 			return {
 				data: response.data.data,
 			};
 		}
-		
+
 		return {
 			error: response.error || 'Failed to fetch students',
 		};
@@ -58,13 +72,13 @@ export class StudentsApi {
 	 */
 	static async getStudent(id: string): Promise<ApiResponse<Student>> {
 		const response = await apiClient.get<{ data: Student }>(`/students/${id}`);
-		
+
 		if (response.data?.data) {
 			return {
 				data: response.data.data,
 			};
 		}
-		
+
 		return {
 			error: response.error || 'Failed to fetch student',
 		};
@@ -84,14 +98,14 @@ export class StudentsApi {
 		}
 
 		const response = await apiClient.post<{ message: string }>('/students', studentData);
-		
+
 		if (response.message && !response.error) {
 			return {
 				data: 'success',
 				message: response.message,
 			};
 		}
-		
+
 		return {
 			error: response.error || 'Failed to create student',
 		};
@@ -111,14 +125,14 @@ export class StudentsApi {
 		}
 
 		const response = await apiClient.put<{ message: string }>(`/students/${id}`, studentData);
-		
+
 		if (response.message && !response.error) {
 			return {
 				data: 'success',
 				message: response.message,
 			};
 		}
-		
+
 		return {
 			error: response.error || 'Failed to update student',
 		};
@@ -129,14 +143,14 @@ export class StudentsApi {
 	 */
 	static async deleteStudent(id: string): Promise<ApiResponse<string>> {
 		const response = await apiClient.delete<{ message: string }>(`/students/${id}`);
-		
+
 		if (response.message && !response.error) {
 			return {
 				data: 'success',
 				message: response.message,
 			};
 		}
-		
+
 		return {
 			error: response.error || 'Failed to delete student',
 		};

@@ -2,6 +2,8 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
+	import Error from './+error.svelte';
+	import { page } from '$app/state';
 	import { Toaster } from 'svelte-sonner';
 	import { themeStore } from '$lib/stores/theme';
 
@@ -23,4 +25,8 @@
 
 <Toaster position="bottom-right" expand={true} richColors closeButton />
 
-{@render children?.()}
+{#if page.error?.message}
+	<Error status={page.status} message={page.error.message} />
+{:else}
+	{@render children?.()}
+{/if}

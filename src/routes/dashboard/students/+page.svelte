@@ -11,12 +11,19 @@
 		type StudentFormData 
 	} from '$lib/api/students';
 	import { Modal } from '$lib/ui/modal';
+	import { DataTable } from '$lib/ui/datatable';
 	import { Plus, Loader, Users, Edit, Trash2, AlertCircle } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	// State using $state
 	let students = $state<Student[]>([]);
 	let loading = $state(false);
+	let pagination = $state<{
+		total: number;
+		limit: number;
+		offset: number;
+		hasMore: boolean;
+	} | null>(null);
 
 	// Modal states
 	let showAddModal = $state(false);
@@ -43,18 +50,19 @@
 
 	// Fetch students on mount
 	onMount(() => {
-		fetchStudents();
+		fetchStudents({ limit: 25, offset: 0 });
 	});
 
 	// Fetch students from API
-	const fetchStudents = async () => {
+	const fetchStudents = async (params?: { limit?: number; offset?: number }) => {
 		loading = true;
 
 		try {
-			const response = await getStudents();
+			const response = await getStudents(params);
 			
 			if (response.data) {
 				students = response.data.students || [];
+				pagination = response.data.pagination || null;
 			} else {
                 toast.error(response.error || 'Failed to fetch students');
 			}
@@ -72,6 +80,7 @@
 		formErrors = validateStudentForm(formData);
 
 		if (Object.keys(formErrors).length > 0) {
+			toast.error('Error creating student: ' + JSON.stringify(formErrors));
 			submitting = false;
 			return;
 		}
@@ -80,7 +89,7 @@
 			const response = await createStudent(formData);
 			
 			if (response.data) {
-				await fetchStudents(); // Refresh the list
+				await refreshCurrentPage(); // Refresh the list
 				resetForm();
 				showAddModal = false;
 				toast.success(response.message || 'Student created successfully!');
@@ -103,6 +112,7 @@
 		formErrors = validateStudentForm(formData);
 
 		if (Object.keys(formErrors).length > 0) {
+			toast.error('Error updating student: ' + JSON.stringify(formErrors));
 			submitting = false;
 			return;
 		}
@@ -111,7 +121,7 @@
 			const response = await updateStudent(currentStudent.id, formData);
 			
 			if (response.data) {
-				await fetchStudents(); // Refresh the list
+				await refreshCurrentPage(); // Refresh the list
 				resetForm();
 				showEditModal = false;
 				currentStudent = null;
@@ -136,7 +146,7 @@
 			const response = await deleteStudent(currentStudent.id);
 			
 			if (!response.error) {
-				await fetchStudents(); // Refresh the list
+				await refreshCurrentPage(); // Refresh the list
 				showDeleteModal = false;
 				currentStudent = null;
 				toast.success(response.message || 'Student deleted successfully!');
@@ -147,6 +157,21 @@
 			toast.error('Network error while deleting student');
 		} finally {
 			submitting = false;
+		}
+	};
+
+	// Handle pagination
+	const handlePageChange = (page: number, pageSize: number) => {
+		const offset = (page - 1) * pageSize;
+		fetchStudents({ limit: pageSize, offset });
+	};
+
+	// Refresh current page
+	const refreshCurrentPage = () => {
+		if (pagination) {
+			fetchStudents({ limit: pagination.limit, offset: pagination.offset });
+		} else {
+			fetchStudents({ limit: 25, offset: 0 });
 		}
 	};
 
@@ -209,78 +234,62 @@
 		</div>
 
 		<!-- Students table -->
-		<div class="card py-6 px-2">
-			{#if loading}
-				<div class="flex items-center justify-center py-12">
-					<Loader class="animate-spin h-8 w-8 text-primary-600" />
-					<span class="ml-2 text-surface-600 dark:text-surface-400">Loading students...</span>
-				</div>
-			{:else if students.length === 0}
-				<div class="text-center py-12">
-					<Users class="w-12 h-12 text-surface-400 mx-auto mb-4" />
-					<h3 class="text-lg font-medium text-surface-900 dark:text-surface-50 mb-2">
-						No students found
-					</h3>
-					<p class="text-surface-600 dark:text-surface-400 mb-4">
-						Get started by adding your first student
-					</p>
-					<button class="btn variant-filled-primary" onclick={openAddModal}>
-						Add First Student
-					</button>
-				</div>
-			{:else}
-				<div class="overflow-x-auto">
-					<table class="w-full">
-						<thead>
-							<tr class="border-b border-surface-200 dark:border-surface-700">
-								<th class="text-left p-4 font-medium text-surface-900 dark:text-surface-50">Name</th>
-								<th class="text-left p-4 font-medium text-surface-900 dark:text-surface-50">Created</th>
-								<th class="text-right p-4 font-medium text-surface-900 dark:text-surface-50">Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each students as student}
-								<tr class="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50">
-									<td class="p-4">
-										<div class="flex items-center">
-											<div class="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mr-3">
-												<span class="text-sm font-medium text-primary-600">
-													{student.full_name.charAt(0).toUpperCase()}
-												</span>
-											</div>
-											<span class="font-medium text-surface-900 dark:text-surface-50">
-												{student.full_name}
-											</span>
-										</div>
-									</td>
-									<td class="p-4 text-surface-600 dark:text-surface-400">
-										{new Date(student.created_at).toLocaleDateString()}
-									</td>
-									<td class="p-4 text-right">
-										<div class="flex items-center justify-end gap-2">
-											<button 
-												class="btn btn-sm hover:scale-105" 
-												onclick={() => openEditModal(student)}
-												aria-label="Edit student"
-											>
-												<Edit class="w-4 h-4" />
-											</button>
-											<button 
-												class="btn btn-sm preset-tonal-error hover:scale-105" 
-												onclick={() => openDeleteModal(student)}
-												aria-label="Delete student"
-											>
-												<Trash2 class="w-4 h-4" />
-											</button>
-										</div>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			{/if}
-		</div>
+		<DataTable 
+			data={students}
+			loading={loading}
+			emptyIcon={Users}
+			emptyTitle="No students found"
+			emptyDescription="Get started by adding your first student"
+			emptyButtonText="Add First Student"
+			onEmptyButtonClick={openAddModal}
+			showPagination={true}
+			pagination={pagination || undefined}
+			onPageChange={handlePageChange}
+			pageSizeOptions={[10, 25, 50, 100]}
+			defaultSort={{ column: 'full_name', direction: 'asc' }}
+			columns={[
+				{
+					key: 'full_name',
+					label: 'Name',
+					sortable: true,
+					sortType: 'string',
+					render: (student) => `
+						<div class="flex items-center">
+							<div class="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mr-3">
+								<span class="text-sm font-medium text-primary-600">
+									${student.full_name.charAt(0).toUpperCase()}
+								</span>
+							</div>
+							<span class="font-medium text-surface-900 dark:text-surface-50">
+								${student.full_name}
+							</span>
+						</div>
+					`
+				},
+				{
+					key: 'created_at',
+					label: 'Created',
+					sortable: true,
+					sortType: 'date',
+					render: (student) => `<span class="text-surface-600 dark:text-surface-400">${new Date(student.created_at).toLocaleDateString()}</span>`
+				}
+			]}
+			actions={[
+				{
+					label: 'Edit',
+					icon: Edit,
+					onClick: openEditModal,
+					ariaLabel: 'Edit student'
+				},
+				{
+					label: 'Delete',
+					icon: Trash2,
+					onClick: openDeleteModal,
+					variant: 'error',
+					ariaLabel: 'Delete student'
+				}
+			]}
+		/>
 	</div>
 </div>
 
@@ -305,14 +314,11 @@
 					placeholder="Enter full name"
 					required
 				>
-				{#if formErrors.full_name}
-					<p class="text-error-500 text-sm mt-1">{formErrors.full_name}</p>
-				{/if}
 			</div>
 		</div>
 
 		<div class="flex justify-end gap-3 mt-6">
-			<button type="button" class="btn variant-ghost" onclick={closeAllModals} disabled={submitting}>
+			<button type="button" class="btn preset-filled-surface-500" onclick={closeAllModals} disabled={submitting}>
 				Cancel
 			</button>
 			<button type="submit" class="btn preset-filled-primary-500" disabled={submitting}>
@@ -349,14 +355,11 @@
 						placeholder="Enter full name"
 						required
 					>
-					{#if formErrors.full_name}
-						<p class="text-error-500 text-sm mt-1">{formErrors.full_name}</p>
-					{/if}
 				</div>
 			</div>
 
 			<div class="flex justify-end gap-3 mt-6">
-				<button type="button" class="btn variant-ghost" onclick={closeAllModals} disabled={submitting}>
+				<button type="button" class="btn preset-filled-surface-500" onclick={closeAllModals} disabled={submitting}>
 					Cancel
 				</button>
 				<button type="submit" class="btn preset-filled-primary-500" disabled={submitting}>
@@ -395,7 +398,7 @@
 		</div>
 
 			<div class="flex justify-end gap-3">
-				<button type="button" class="btn variant-ghost" onclick={closeAllModals} disabled={submitting}>
+				<button type="button" class="btn preset-filled-surface-500" onclick={closeAllModals} disabled={submitting}>
 					Cancel
 				</button>
 				<button type="button" class="btn preset-filled-error-500" onclick={handleDeleteStudent} disabled={submitting}>

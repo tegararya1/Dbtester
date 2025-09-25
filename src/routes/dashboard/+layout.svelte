@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
     import { ModeToggle } from '$lib/ui/mode-toggle';
-	import { Loader, LayoutDashboard, Users, LogOut, PanelLeftOpen, PanelLeftClose, X } from 'lucide-svelte';
+	import { Loader, LayoutDashboard, Users, LogOut, PanelLeftOpen, PanelLeftClose, X, Package, Thermometer, FileText } from 'lucide-svelte';
 	import { useMobile } from '$lib/hooks';
 
 	let { children } = $props();
@@ -41,8 +41,8 @@
 		const unsubscribe = authStore.subscribe(state => {
 			authState = state;
 			
-			// Redirect to login if not authenticated and not loading
-			if (!state.isAuthenticated && !state.loading) {
+			// Only redirect if we have a definitive non-authenticated state
+			if (!state.loading && !state.isAuthenticated && !state.token) {
 				goto('/login');
 			}
 		});
@@ -70,6 +70,21 @@
 			href: '/dashboard/students',
 			label: 'Students',
 			icon: Users
+		},
+		{
+			href: '/dashboard/containers',
+			label: 'Containers',
+			icon: Package
+		},
+		{
+			href: '/dashboard/sensor-data',
+			label: 'Sensor Data',
+			icon: Thermometer
+		},
+		{
+			href: '/dashboard/reports',
+			label: 'Reports',
+			icon: FileText
 		}
 	];
 </script>
