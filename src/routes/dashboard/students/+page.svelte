@@ -12,7 +12,7 @@
 	} from '$lib/api/students';
 	import { Modal } from '$lib/ui/modal';
 	import { DataTable } from '$lib/ui/datatable';
-	import { Plus, Loader, Users, Edit, Trash2, AlertCircle } from 'lucide-svelte';
+	import { Plus, Loader, Users, Edit, Trash2, AlertCircle, RefreshCw } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	// State using $state
@@ -227,10 +227,15 @@
 					Manage student records and information
 				</p>
 			</div>
-			<button class="btn preset-outlined-primary-500 hover:scale-105" onclick={openAddModal}>
-				<Plus class="w-4 h-4 mr-2" />
-				Add Student
-			</button>
+			<div class="flex items-center gap-2">
+				<button class="btn-icon preset-tonal-surface hover:scale-105" onclick={refreshCurrentPage} disabled={loading}>
+					<RefreshCw class="w-4 h-4 {loading ? 'animate-spin' : ''}" />
+				</button>
+				<button class="btn preset-outlined-primary-500 hover:scale-105" onclick={openAddModal}>
+					<Plus class="w-4 h-4" />
+					Add Student
+				</button>
+			</div>
 		</div>
 
 		<!-- Students table -->

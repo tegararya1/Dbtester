@@ -72,8 +72,24 @@ class ApiClient {
 				headers: requestHeaders,
 			});
 
-			// Parse response
-			const data = await response.json();
+			// Parse response - handle cases where response might not be JSON
+			let data;
+			try {
+				data = await response.json();
+			} catch (jsonError) {
+				// If JSON parsing fails, try to get text content
+				const textContent = await response.text();
+				console.error(`JSON Parse Error:`, {
+					endpoint,
+					status: response.status,
+					textContent,
+					jsonError: jsonError instanceof Error ? jsonError.message : jsonError
+				});
+				
+				return {
+					error: `Invalid JSON response: ${response.status} ${response.statusText}${textContent ? ` - ${textContent}` : ''}`,
+				};
+			}
 
 			if (response.ok) {
 				return {
@@ -81,12 +97,42 @@ class ApiClient {
 					message: data.message,
 				};
 			} else {
+				// Try to extract detailed error information
+				let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+				
+				// Check for API error message in various possible formats
+				if (data.message) {
+					errorMessage = data.message;
+				} else if (data.error) {
+					errorMessage = data.error;
+				} else if (data.detail) {
+					errorMessage = data.detail;
+				} else if (data.errors && Array.isArray(data.errors)) {
+					errorMessage = data.errors.join(', ');
+				} else if (typeof data === 'string') {
+					errorMessage = data;
+				}
+
+				console.error(`API Error [${response.status}]:`, {
+					endpoint,
+					status: response.status,
+					statusText: response.statusText,
+					data,
+					errorMessage
+				});
+
 				return {
-					error: data.message || `HTTP ${response.status}: ${response.statusText}`,
+					error: errorMessage,
 					message: data.message,
 				};
 			}
 		} catch (error) {
+			console.error(`Network Error:`, {
+				endpoint,
+				error: error instanceof Error ? error.message : error,
+				stack: error instanceof Error ? error.stack : undefined
+			});
+
 			return {
 				error: error instanceof Error ? error.message : 'Network error occurred',
 			};
