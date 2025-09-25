@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
     import { ModeToggle } from '$lib/ui/mode-toggle';
-	import { Loader, LayoutDashboard, Users, LogOut, PanelLeftOpen, PanelLeftClose, X, Package, Thermometer } from 'lucide-svelte';
+	import { Loader, LayoutDashboard, Users, LogOut, PanelLeftOpen, PanelLeftClose, X, Package, Thermometer, FileText } from 'lucide-svelte';
 	import { useMobile } from '$lib/hooks';
 
 	let { children } = $props();
@@ -80,6 +80,11 @@
 			href: '/dashboard/sensor-data',
 			label: 'Sensor Data',
 			icon: Thermometer
+		},
+		{
+			href: '/dashboard/reports',
+			label: 'Reports',
+			icon: FileText
 		}
 	];
 </script>

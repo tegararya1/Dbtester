@@ -14,7 +14,17 @@
 	import { Modal } from '$lib/ui/modal';
 	import { DataTable } from '$lib/ui/datatable';
 	import { Combobox } from '@skeletonlabs/skeleton-svelte';
-	import { Plus, Loader, Thermometer, Edit, Trash2, AlertCircle, Droplets, Wind, FlaskConical } from 'lucide-svelte';
+	import {
+		Plus,
+		Loader,
+		Thermometer,
+		Edit,
+		Trash2,
+		AlertCircle,
+		Droplets,
+		Wind,
+		FlaskConical
+	} from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	// State using $state
@@ -43,6 +53,8 @@
 		status: null
 	});
 
+	let status = $state<string[]>(['Belum Siap', 'Hampir Siap', 'Sudah Siap']);
+
 	// Form validation
 	let formErrors = $state<Record<string, string>>({});
 	let submitting = $state(false);
@@ -53,7 +65,7 @@
 		value: string;
 		container: Container;
 	}
-	
+
 	let containers = $state<Container[]>([]);
 	let containerComboboxData = $state<ContainerComboboxData[]>([]);
 	let selectedContainerIds = $state<string[]>([]);
@@ -79,7 +91,7 @@
 			if (response.data) {
 				containers = response.data.containers || [];
 				// Transform containers data for combobox
-				containerComboboxData = containers.map(container => ({
+				containerComboboxData = containers.map((container) => ({
 					label: `${container.code}`,
 					value: container.id,
 					container: container
@@ -311,13 +323,15 @@
 
 	// Get container code by id for display
 	const getContainerCode = (containerId: string): string => {
-		const container = containers.find(c => c.id === containerId);
+		const container = containers.find((c) => c.id === containerId);
 		return container ? container.code : 'Unknown';
 	};
 
 	// Format number with units
-	const formatTemperature = (temp: number | null | undefined): string => `${temp != null ? temp : 'N/A'}°C`;
-	const formatHumidity = (humidity: number | null | undefined): string => `${humidity != null ? humidity : 'N/A'}%`;
+	const formatTemperature = (temp: number | null | undefined): string =>
+		`${temp != null ? temp : 'N/A'}°C`;
+	const formatHumidity = (humidity: number | null | undefined): string =>
+		`${humidity != null ? humidity : 'N/A'}%`;
 	const formatGas = (gas: number | null | undefined): string => `${gas != null ? gas : 'N/A'} ppm`;
 	const formatPH = (ph: number | null | undefined): string => `${ph != null ? ph : 'N/A'} pH`;
 </script>
@@ -331,9 +345,7 @@
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6 px-4">
 			<div>
-				<h1 class="text-3xl font-bold text-surface-900 dark:text-surface-50 mb-2">
-					Sensor Data
-				</h1>
+				<h1 class="text-3xl font-bold text-surface-900 dark:text-surface-50 mb-2">Sensor Data</h1>
 				<p class="text-surface-600 dark:text-surface-400">
 					Monitor and manage sensor readings from containers
 				</p>
@@ -345,9 +357,9 @@
 		</div>
 
 		<!-- Sensor data table -->
-		<DataTable 
+		<DataTable
 			data={sensorDataList}
-			loading={loading}
+			{loading}
 			emptyIcon={Thermometer}
 			emptyTitle="No sensor data found"
 			emptyDescription="Get started by adding your first sensor reading"
@@ -448,18 +460,20 @@
 					sortType: 'string',
 					render: (sensorData) => `
 						<div class="flex items-center">
-							${sensorData.status === 'alert' ? `
-								<AlertCircle class="w-4 h-4 text-red-500 mr-2" />
-								<span class="text-red-600 font-medium">Alert</span>
-							` : sensorData.status === 'ready' ? `
-								<CheckCircle class="w-4 h-4 text-green-500 mr-2" />
-								<span class="text-green-600 font-medium">Ready</span>
-							` : sensorData.status === 'maintenance' ? `
-								<Settings class="w-4 h-4 text-yellow-500 mr-2" />
-								<span class="text-yellow-600 font-medium">Maintenance</span>
-							` : `
-								<span class="text-surface-600 dark:text-surface-400 italic">N/A</span>
-							`}
+							${(() => {
+								const statusColors = {
+									[status[0]]: 'preset-tonal-error',
+									[status[1]]: 'preset-tonal-warning', 
+									[status[2]]: 'preset-tonal-success'
+								};
+								
+								const color = statusColors[sensorData.status] || 'text-surface-600 dark:text-surface-400 italic';
+								const displayText = sensorData.status || 'N/A';
+								
+								return `
+									<span class="badge ${color} font-medium">${displayText}</span>
+									`;
+							})()}
 						</div>
 					`
 				},
@@ -468,7 +482,8 @@
 					label: 'Recorded',
 					sortable: true,
 					sortType: 'date',
-					render: (sensorData) => `<span class="text-surface-600 dark:text-surface-400">${new Date(sensorData.created_at).toLocaleDateString()}</span>`
+					render: (sensorData) =>
+						`<span class="text-surface-600 dark:text-surface-400">${new Date(sensorData.created_at).toLocaleDateString()}</span>`
 				}
 			]}
 			actions={[
@@ -491,17 +506,15 @@
 </div>
 
 <!-- Add Sensor Data Modal -->
-<Modal 
-	open={showAddModal} 
-	title="Add New Sensor Reading"
-	size="lg"
-	on:close={closeModals}
->
+<Modal open={showAddModal} title="Add New Sensor Reading" size="lg" on:close={closeModals}>
 	<form onsubmit={handleCreateSensorData}>
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 			<!-- Container Selection -->
 			<div class="md:col-span-2">
-				<label for="add-container_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-container_id"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					Container *
 				</label>
 				<Combobox
@@ -541,7 +554,10 @@
 
 			<!-- Temperature -->
 			<div>
-				<label for="add-temperature" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-temperature"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					Temperature (°C)
 				</label>
 				<input
@@ -551,14 +567,19 @@
 					min="-50"
 					max="100"
 					bind:value={formData.temperature}
-					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.temperature ? 'input-error' : ''}"
+					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.temperature
+						? 'input-error'
+						: ''}"
 					placeholder="25.5"
 				/>
 			</div>
 
 			<!-- Humidity -->
 			<div>
-				<label for="add-humidity" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-humidity"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					Humidity (%)
 				</label>
 				<input
@@ -568,14 +589,19 @@
 					min="0"
 					max="100"
 					bind:value={formData.humidity}
-					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.humidity ? 'input-error' : ''}"
+					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.humidity
+						? 'input-error'
+						: ''}"
 					placeholder="60.2"
 				/>
 			</div>
 
 			<!-- Gas -->
 			<div>
-				<label for="add-gas" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-gas"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					Gas (ppm)
 				</label>
 				<input
@@ -584,14 +610,19 @@
 					step="0.01"
 					min="0"
 					bind:value={formData.gas}
-					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.gas ? 'input-error' : ''}"
+					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.gas
+						? 'input-error'
+						: ''}"
 					placeholder="0.03"
 				/>
 			</div>
 
 			<!-- pH -->
 			<div>
-				<label for="add-ph" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-ph"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					pH Level
 				</label>
 				<input
@@ -601,28 +632,41 @@
 					min="0"
 					max="14"
 					bind:value={formData.ph}
-					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.ph ? 'input-error' : ''}"
+					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.ph
+						? 'input-error'
+						: ''}"
 					placeholder="7.2"
 				/>
 			</div>
 
 			<!-- status -->
 			<div>
-				<label for="add-status" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-status"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					status
 				</label>
-				<input
-					id="add-status"
-					type="text"
+				<select
 					bind:value={formData.status}
-					class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.status ? 'input-error' : ''}"
-					placeholder="Ready"
-				/>
+					class="select w-full {formErrors.status ? 'select-error' : ''}"
+					aria-label="Select status"
+					placeholder="Select status"
+				>
+					{#each status as stat}
+						<option value={stat}>{stat}</option>
+					{/each}
+				</select>
 			</div>
 		</div>
 
 		<div class="flex justify-end gap-3 mt-6">
-			<button type="button" class="btn preset-filled-surface-500" onclick={closeModals} disabled={submitting}>
+			<button
+				type="button"
+				class="btn preset-filled-surface-500"
+				onclick={closeModals}
+				disabled={submitting}
+			>
 				Cancel
 			</button>
 			<button type="submit" class="btn preset-filled-primary-500" disabled={submitting}>
@@ -638,18 +682,16 @@
 </Modal>
 
 <!-- Edit Sensor Data Modal -->
-<Modal 
-	open={showEditModal} 
-	title="Edit Sensor Reading"
-	size="lg"
-	on:close={closeModals}
->
+<Modal open={showEditModal} title="Edit Sensor Reading" size="lg" on:close={closeModals}>
 	{#if currentSensorData}
 		<form onsubmit={handleUpdateSensorData}>
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<!-- Container Selection -->
 				<div class="md:col-span-2">
-					<label for="edit-container_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-container_id"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						Container *
 					</label>
 					<Combobox
@@ -689,7 +731,10 @@
 
 				<!-- Temperature -->
 				<div>
-					<label for="edit-temperature" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-temperature"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						Temperature (°C) *
 					</label>
 					<input
@@ -699,14 +744,19 @@
 						min="-50"
 						max="100"
 						bind:value={formData.temperature}
-						class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.temperature ? 'input-error' : ''}"
+						class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.temperature
+							? 'input-error'
+							: ''}"
 						placeholder="25.5"
 					/>
 				</div>
 
 				<!-- Humidity -->
 				<div>
-					<label for="edit-humidity" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-humidity"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						Humidity (%) *
 					</label>
 					<input
@@ -716,14 +766,19 @@
 						min="0"
 						max="100"
 						bind:value={formData.humidity}
-						class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.humidity ? 'input-error' : ''}"
+						class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.humidity
+							? 'input-error'
+							: ''}"
 						placeholder="60.2"
 					/>
 				</div>
 
 				<!-- Gas -->
 				<div>
-					<label for="edit-gas" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-gas"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						Gas (ppm) *
 					</label>
 					<input
@@ -732,14 +787,19 @@
 						step="0.01"
 						min="0"
 						bind:value={formData.gas}
-						class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.gas ? 'input-error' : ''}"
+						class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.gas
+							? 'input-error'
+							: ''}"
 						placeholder="0.03"
 					/>
 				</div>
 
 				<!-- pH -->
 				<div>
-					<label for="edit-ph" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-ph"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						pH Level *
 					</label>
 					<input
@@ -749,14 +809,41 @@
 						min="0"
 						max="14"
 						bind:value={formData.ph}
-						class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.ph ? 'input-error' : ''}"
+						class="input w-full placeholder:text-surface-200 dark:placeholder:text-surface-700 {formErrors.ph
+							? 'input-error'
+							: ''}"
 						placeholder="7.0"
 					/>
+				</div>
+
+				<!-- status -->
+				<div>
+					<label
+						for="add-status"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
+						status
+					</label>
+					<select
+						bind:value={formData.status}
+						class="select w-full {formErrors.status ? 'select-error' : ''}"
+						aria-label="Select status"
+						placeholder="Select status"
+					>
+						{#each status as stat}
+							<option value={stat}>{stat}</option>
+						{/each}
+					</select>
 				</div>
 			</div>
 
 			<div class="flex justify-end gap-3 mt-6">
-				<button type="button" class="btn preset-filled-surface-500" onclick={closeModals} disabled={submitting}>
+				<button
+					type="button"
+					class="btn preset-filled-surface-500"
+					onclick={closeModals}
+					disabled={submitting}
+				>
 					Cancel
 				</button>
 				<button type="submit" class="btn preset-filled-primary-500" disabled={submitting}>
@@ -774,14 +861,11 @@
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteModal && currentSensorData}
-	<Modal 
-		open={showDeleteModal} 
-		title="Delete Sensor Reading"
-		size="md"
-		on:close={closeModals}
-	>
+	<Modal open={showDeleteModal} title="Delete Sensor Reading" size="md" on:close={closeModals}>
 		<div class="flex items-start gap-4 mb-6">
-			<div class="flex-shrink-0 w-10 h-10 bg-error-100 dark:bg-error-900/20 rounded-full flex items-center justify-center">
+			<div
+				class="flex-shrink-0 w-10 h-10 bg-error-100 dark:bg-error-900/20 rounded-full flex items-center justify-center"
+			>
 				<AlertCircle class="w-5 h-5 text-error-600 dark:text-error-400" />
 			</div>
 			<div class="flex-1">
@@ -789,7 +873,9 @@
 					Are you sure you want to delete this sensor reading?
 				</p>
 				<p class="text-surface-600 dark:text-surface-400 text-sm mb-4">
-					Reading from <strong>{getContainerCode(currentSensorData.container_id)}</strong> recorded on <strong>{new Date(currentSensorData.created_at).toLocaleString()}</strong> will be permanently removed. This action cannot be undone.
+					Reading from <strong>{getContainerCode(currentSensorData.container_id)}</strong> recorded
+					on <strong>{new Date(currentSensorData.created_at).toLocaleString()}</strong> will be permanently
+					removed. This action cannot be undone.
 				</p>
 				<div class="grid grid-cols-2 gap-4 text-sm bg-surface-100 dark:bg-surface-800 p-3 rounded">
 					<div>
@@ -817,10 +903,20 @@
 		</div>
 
 		<div class="flex justify-end gap-3">
-			<button type="button" class="btn preset-filled-surface-500" onclick={closeModals} disabled={submitting}>
+			<button
+				type="button"
+				class="btn preset-filled-surface-500"
+				onclick={closeModals}
+				disabled={submitting}
+			>
 				Cancel
 			</button>
-			<button type="button" class="btn preset-filled-error-500" onclick={handleDeleteSensorData} disabled={submitting}>
+			<button
+				type="button"
+				class="btn preset-filled-error-500"
+				onclick={handleDeleteSensorData}
+				disabled={submitting}
+			>
 				{#if submitting}
 					<Loader class="animate-spin h-4 w-4 mr-2" />
 					Deleting...
