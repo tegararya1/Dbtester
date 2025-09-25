@@ -15,7 +15,22 @@
 	import { Modal } from '$lib/ui/modal';
 	import { DataTable } from '$lib/ui/datatable';
 	import { Combobox } from '@skeletonlabs/skeleton-svelte';
-	import { Plus, Loader, FileText, Edit, Trash2, AlertCircle, User, Package, Thermometer, Calendar, StickyNote } from 'lucide-svelte';
+	import {
+		Plus,
+		Loader,
+		FileText,
+		Edit,
+		Trash2,
+		AlertCircle,
+		User,
+		Package,
+		Thermometer,
+		Calendar,
+		StickyNote,
+
+		RefreshCw
+
+	} from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	// State using $state
@@ -58,11 +73,11 @@
 		value: string;
 		item: any;
 	}
-	
+
 	let studentComboboxData = $state<ComboboxData[]>([]);
 	let containerComboboxData = $state<ComboboxData[]>([]);
 	let sensorDataComboboxData = $state<ComboboxData[]>([]);
-	
+
 	let selectedStudentIds = $state<string[]>([]);
 	let selectedContainerIds = $state<string[]>([]);
 	let selectedSensorDataIds = $state<string[]>([]);
@@ -81,7 +96,7 @@
 			const response = await getStudents({ limit: 100 });
 			if (response.data) {
 				students = response.data.students || [];
-				studentComboboxData = students.map(student => ({
+				studentComboboxData = students.map((student) => ({
 					label: student.full_name,
 					value: student.id,
 					item: student
@@ -99,7 +114,7 @@
 			const response = await getContainers({ limit: 100 });
 			if (response.data) {
 				containers = response.data.containers || [];
-				containerComboboxData = containers.map(container => ({
+				containerComboboxData = containers.map((container) => ({
 					label: container.code,
 					value: container.id,
 					item: container
@@ -116,16 +131,16 @@
 		try {
 			const response = await getSensorData({ limit: 100 });
 			if (response.data) {
-                sensorDataList = response.data.sensor_data || [];
-                sensorDataComboboxData = sensorDataList.map(sensorData => {
-                    const last5Digits = sensorData.id.slice(-5);
-                    const date = new Date(sensorData.created_at).toLocaleDateString();
-                    return {
-                        label: `${last5Digits} - ${date}`,
-                        value: sensorData.id,
-                        item: sensorData
-                    };
-                });
+				sensorDataList = response.data.sensor_data || [];
+				sensorDataComboboxData = sensorDataList.map((sensorData) => {
+					const last5Digits = sensorData.id.slice(-5);
+					const date = new Date(sensorData.created_at).toLocaleDateString();
+					return {
+						label: `${last5Digits} - ${date}`,
+						value: sensorData.id,
+						item: sensorData
+					};
+				});
 			}
 		} catch (err) {
 			console.error('Failed to load sensor data:', err);
@@ -343,28 +358,28 @@
 
 	// Helper functions to get reference data
 	const getStudentName = (studentId: string): string => {
-		const student = students.find(s => s.id === studentId);
+		const student = students.find((s) => s.id === studentId);
 		return student ? student.full_name : 'Unknown Student';
 	};
 
 	const getContainerCode = (containerId: string): string => {
-		const container = containers.find(c => c.id === containerId);
+		const container = containers.find((c) => c.id === containerId);
 		return container ? container.code : 'Unknown Container';
 	};
 
 	const getSensorDataId = (sensorDataId: string): string => {
-		const sensorData = sensorDataList.find(s => s.id === sensorDataId);
+		const sensorData = sensorDataList.find((s) => s.id === sensorDataId);
 		if (!sensorData) return 'Unknown Sensor Data ID';
-		
+
 		return sensorData.id.slice(-5);
 	};
 
-    const getSensorDataDate = (sensorDataId: string): string => {
-        const sensorData = sensorDataList.find(s => s.id === sensorDataId);
-        if (!sensorData) return 'Unknown Date';
+	const getSensorDataDate = (sensorDataId: string): string => {
+		const sensorData = sensorDataList.find((s) => s.id === sensorDataId);
+		if (!sensorData) return 'Unknown Date';
 
-        return new Date(sensorData.created_at).toLocaleDateString();
-    };
+		return new Date(sensorData.created_at).toLocaleDateString();
+	};
 </script>
 
 <svelte:head>
@@ -376,23 +391,26 @@
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6 px-4">
 			<div>
-				<h1 class="text-3xl font-bold text-surface-900 dark:text-surface-50 mb-2">
-					Reports
-				</h1>
+				<h1 class="text-3xl font-bold text-surface-900 dark:text-surface-50 mb-2">Reports</h1>
 				<p class="text-surface-600 dark:text-surface-400">
 					Manage student reports for container sensor data
 				</p>
 			</div>
-			<button class="btn preset-outlined-primary-500 hover:scale-105" onclick={openAddModal}>
-				<Plus class="w-4 h-4 mr-2" />
-				Add Report
-			</button>
+			<div class="flex items-center gap-2">
+                <button class="btn-icon preset-tonal-surface hover:scale-105" onclick={refreshCurrentPage} disabled={loading}>
+                    <RefreshCw class="w-4 h-4 {loading ? 'animate-spin' : ''}" />
+                </button>
+				<button class="btn preset-outlined-primary-500 hover:scale-105" onclick={openAddModal}>
+					<Plus class="w-4 h-4" />
+					Add Report
+				</button>
+			</div>
 		</div>
 
 		<!-- Reports table -->
-		<DataTable 
+		<DataTable
 			data={reportsList}
-			loading={loading}
+			{loading}
 			emptyIcon={FileText}
 			emptyTitle="No reports found"
 			emptyDescription="Get started by adding your first report"
@@ -456,13 +474,17 @@
 					sortable: false,
 					render: (report) => `
 						<div class="flex items-center">
-							${report.notes ? `
+							${
+								report.notes
+									? `
 								<span class="text-surface-700 dark:text-surface-300 truncate max-w-xs">
 									${report.notes}
 								</span>
-							` : `
+							`
+									: `
 								<span class="text-surface-500 dark:text-surface-500 italic">No notes</span>
-							`}
+							`
+							}
 						</div>
 					`
 				},
@@ -506,17 +528,15 @@
 </div>
 
 <!-- Add Report Modal -->
-<Modal 
-	open={showAddModal} 
-	title="Add New Report"
-	size="lg"
-	on:close={closeModals}
->
+<Modal open={showAddModal} title="Add New Report" size="lg" on:close={closeModals}>
 	<form onsubmit={handleCreateReport}>
 		<div class="space-y-4">
 			<!-- Student Selection -->
 			<div>
-				<label for="add-student_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-student_id"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					Student *
 				</label>
 				<Combobox
@@ -549,7 +569,10 @@
 
 			<!-- Container Selection -->
 			<div>
-				<label for="add-container_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-container_id"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					Container *
 				</label>
 				<Combobox
@@ -582,7 +605,10 @@
 
 			<!-- Sensor Data Selection -->
 			<div>
-				<label for="add-sensor_data_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-sensor_data_id"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					Sensor Data *
 				</label>
 				<Combobox
@@ -615,7 +641,10 @@
 
 			<!-- Notes -->
 			<div>
-				<label for="add-notes" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+				<label
+					for="add-notes"
+					class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+				>
 					Notes
 				</label>
 				<textarea
@@ -629,7 +658,12 @@
 		</div>
 
 		<div class="flex justify-end gap-3 mt-6">
-			<button type="button" class="btn preset-filled-surface-500" onclick={closeModals} disabled={submitting}>
+			<button
+				type="button"
+				class="btn preset-filled-surface-500"
+				onclick={closeModals}
+				disabled={submitting}
+			>
 				Cancel
 			</button>
 			<button type="submit" class="btn preset-filled-primary-500" disabled={submitting}>
@@ -645,18 +679,16 @@
 </Modal>
 
 <!-- Edit Report Modal -->
-<Modal 
-	open={showEditModal} 
-	title="Edit Report"
-	size="lg"
-	on:close={closeModals}
->
+<Modal open={showEditModal} title="Edit Report" size="lg" on:close={closeModals}>
 	{#if currentReport}
 		<form onsubmit={handleUpdateReport}>
 			<div class="space-y-6">
 				<!-- Student Selection -->
 				<div>
-					<label for="edit-student_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-student_id"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						Student *
 					</label>
 					<Combobox
@@ -686,7 +718,10 @@
 
 				<!-- Container Selection -->
 				<div>
-					<label for="edit-container_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-container_id"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						Container *
 					</label>
 					<Combobox
@@ -716,7 +751,10 @@
 
 				<!-- Sensor Data Selection -->
 				<div>
-					<label for="edit-sensor_data_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-sensor_data_id"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						Sensor Data *
 					</label>
 					<Combobox
@@ -746,7 +784,10 @@
 
 				<!-- Notes -->
 				<div>
-					<label for="edit-notes" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+					<label
+						for="edit-notes"
+						class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+					>
 						Notes
 					</label>
 					<textarea
@@ -760,7 +801,12 @@
 			</div>
 
 			<div class="flex justify-end gap-3 mt-6">
-				<button type="button" class="btn preset-filled-surface-500" onclick={closeModals} disabled={submitting}>
+				<button
+					type="button"
+					class="btn preset-filled-surface-500"
+					onclick={closeModals}
+					disabled={submitting}
+				>
 					Cancel
 				</button>
 				<button type="submit" class="btn preset-filled-primary-500" disabled={submitting}>
@@ -778,12 +824,7 @@
 
 <!-- View Report Modal -->
 {#if showViewModal && currentReport}
-	<Modal 
-		open={showViewModal} 
-		title="Report Details"
-		size="lg"
-		on:close={closeModals}
-	>
+	<Modal open={showViewModal} title="Report Details" size="lg" on:close={closeModals}>
 		<div class="space-y-6">
 			<!-- Report Information -->
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -797,7 +838,9 @@
 					</div>
 
 					<div>
-						<h3 class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Container</h3>
+						<h3 class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+							Container
+						</h3>
 						<div class="flex items-center p-3 bg-surface-100 dark:bg-surface-800 rounded-lg">
 							<Package class="w-5 h-5 text-blue-600 mr-2" />
 							<span class="font-medium">{getContainerCode(currentReport.container_id)}</span>
@@ -807,13 +850,19 @@
 
 				<div class="space-y-4">
 					<div>
-						<h3 class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Sensor Data</h3>
+						<h3 class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+							Sensor Data
+						</h3>
 						<div class="flex items-center p-3 bg-surface-100 dark:bg-surface-800 rounded-lg">
 							<Thermometer class="w-5 h-5 text-orange-600 mr-2" />
-                            <div class="flex items-center gap-2">
-							    <span class="badge preset-tonal-primary">{getSensorDataId(currentReport.sensor_data_id)}</span>
-                                <span class="text-surface-500 dark:text-surface-400">{getSensorDataDate(currentReport.sensor_data_id)}</span>
-                            </div>
+							<div class="flex items-center gap-2">
+								<span class="badge preset-tonal-primary"
+									>{getSensorDataId(currentReport.sensor_data_id)}</span
+								>
+								<span class="text-surface-500 dark:text-surface-400"
+									>{getSensorDataDate(currentReport.sensor_data_id)}</span
+								>
+							</div>
 						</div>
 					</div>
 
@@ -834,11 +883,15 @@
 					{#if currentReport.notes}
 						<div class="flex items-start">
 							<StickyNote class="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
-							<p class="text-surface-900 dark:text-surface-50 leading-relaxed">{currentReport.notes}</p>
+							<p class="text-surface-900 dark:text-surface-50 leading-relaxed">
+								{currentReport.notes}
+							</p>
 						</div>
 					{:else}
 						<div class="flex items-center justify-center h-full">
-							<span class="text-surface-500 dark:text-surface-500 italic">No notes added to this report</span>
+							<span class="text-surface-500 dark:text-surface-500 italic"
+								>No notes added to this report</span
+							>
 						</div>
 					{/if}
 				</div>
@@ -858,7 +911,14 @@
 			<button type="button" class="btn preset-filled-surface-500" onclick={closeModals}>
 				Close
 			</button>
-			<button type="button" class="btn preset-outlined-primary-500" onclick={() => { closeModals(); if (currentReport) openEditModal(currentReport); }}>
+			<button
+				type="button"
+				class="btn preset-outlined-primary-500"
+				onclick={() => {
+					closeModals();
+					if (currentReport) openEditModal(currentReport);
+				}}
+			>
 				<Edit class="w-4 h-4 mr-2" />
 				Edit Report
 			</button>
@@ -868,14 +928,11 @@
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteModal && currentReport}
-	<Modal 
-		open={showDeleteModal} 
-		title="Delete Report"
-		size="md"
-		on:close={closeModals}
-	>
+	<Modal open={showDeleteModal} title="Delete Report" size="md" on:close={closeModals}>
 		<div class="flex items-start gap-4 mb-6">
-			<div class="flex-shrink-0 w-10 h-10 bg-error-100 dark:bg-error-900/20 rounded-full flex items-center justify-center">
+			<div
+				class="flex-shrink-0 w-10 h-10 bg-error-100 dark:bg-error-900/20 rounded-full flex items-center justify-center"
+			>
 				<AlertCircle class="w-5 h-5 text-error-600 dark:text-error-400" />
 			</div>
 			<div class="flex-1">
@@ -883,9 +940,11 @@
 					Are you sure you want to delete this report?
 				</p>
 				<p class="text-surface-600 dark:text-surface-400 text-sm mb-4">
-					Report by <strong>{getStudentName(currentReport.student_id)}</strong> for container <strong>{getContainerCode(currentReport.container_id)}</strong> will be permanently removed. This action cannot be undone.
+					Report by <strong>{getStudentName(currentReport.student_id)}</strong> for container
+					<strong>{getContainerCode(currentReport.container_id)}</strong> will be permanently removed.
+					This action cannot be undone.
 				</p>
-				
+
 				{#if currentReport.notes}
 					<div class="bg-surface-100 dark:bg-surface-800 p-3 rounded text-sm">
 						<div class="flex items-start">
@@ -898,10 +957,20 @@
 		</div>
 
 		<div class="flex justify-end gap-3">
-			<button type="button" class="btn preset-filled-surface-500" onclick={closeModals} disabled={submitting}>
+			<button
+				type="button"
+				class="btn preset-filled-surface-500"
+				onclick={closeModals}
+				disabled={submitting}
+			>
 				Cancel
 			</button>
-			<button type="button" class="btn preset-filled-error-500" onclick={handleDeleteReport} disabled={submitting}>
+			<button
+				type="button"
+				class="btn preset-filled-error-500"
+				onclick={handleDeleteReport}
+				disabled={submitting}
+			>
 				{#if submitting}
 					<Loader class="animate-spin h-4 w-4 mr-2" />
 					Deleting...

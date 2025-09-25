@@ -23,7 +23,8 @@
 		AlertCircle,
 		Droplets,
 		Wind,
-		FlaskConical
+		FlaskConical,
+		RefreshCw
 	} from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -350,10 +351,15 @@
 					Monitor and manage sensor readings from containers
 				</p>
 			</div>
-			<button class="btn preset-outlined-primary-500 hover:scale-105" onclick={openAddModal}>
-				<Plus class="w-4 h-4 mr-2" />
-				Add Sensor Reading
-			</button>
+			<div class="flex items-center gap-2">
+                <button class="btn-icon preset-tonal-surface hover:scale-105" onclick={refreshCurrentPage} disabled={loading}>
+                    <RefreshCw class="w-4 h-4 {loading ? 'animate-spin' : ''}" />
+                </button>
+				<button class="btn preset-outlined-primary-500 hover:scale-105" onclick={openAddModal}>
+					<Plus class="w-4 h-4" />
+					Add Sensor Data
+				</button>
+			</div>
 		</div>
 
 		<!-- Sensor data table -->
