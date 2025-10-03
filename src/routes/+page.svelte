@@ -6,9 +6,10 @@
 	import { getLatestSensorData, type SensorData, createSensorData, type SensorDataFormData, getSensorData } from '$lib/api/sensor-data';
 	import { getContainers, type Container } from '$lib/api/containers';
 	import { createReport } from '$lib/api/reports';
-	import { GraduationCap, ChevronRight, Activity, TrendingUp, Zap, Calendar, Thermometer, Cylinder } from 'lucide-svelte';
+	import { GraduationCap, ChevronRight, ChevronLeft, Activity, TrendingUp, Zap, Calendar, Thermometer, Cylinder } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import DataTable from '$lib/ui/datatable/datatable.svelte';
+	import { useMobile } from '$lib/hooks/useMobile';
 
 	// State
 	let students = $state<Student[]>([]);
@@ -27,6 +28,10 @@
 	let loading = $state(false);
 	let historyLoading = $state(false);
 	let currentStep = $state(1);
+	let isViewingHistory = $state(false);
+
+	// Mobile detection
+	const { isMobile } = useMobile(768);
 
 	// Auth state
 	let authState = $state($authStore);
@@ -177,7 +182,37 @@
 
 	// View history directly from step 1
 	const viewHistory = () => {
+		isViewingHistory = true;
 		goToStep(5);
+	};
+
+	// Back navigation functions
+	const goBackToProfile = () => {
+		selectedContainer = null;
+		sensorFormData = { temperature: null, humidity: null, gas: null, ph: null, status: '' };
+		isViewingHistory = false;
+		goToStep(1);
+	};
+
+	const goBackToDrum = () => {
+		sensorFormData = { temperature: null, humidity: null, gas: null, ph: null, status: '' };
+		isViewingHistory = false;
+		goToStep(2);
+	};
+
+	const goBackToTHG = () => {
+		isViewingHistory = false;
+		goToStep(3);
+	};
+
+	// Reset to start fresh
+	const startFresh = () => {
+		selectedStudent = null;
+		selectedContainer = null;
+		sensorFormData = { temperature: null, humidity: null, gas: null, ph: null, status: '' };
+		sensorHistory = [];
+		isViewingHistory = false;
+		goToStep(1);
 	};
 
 	// Submit sensor data with selected color/status
@@ -249,6 +284,7 @@
 				}
 				
 				toast.success('Sensor data submitted successfully!');
+				isViewingHistory = false; // Set to success mode, not history mode
 				goToStep(5);
 			} else {
 				toast.error(response.error || 'Failed to submit sensor data');
@@ -285,9 +321,9 @@
 		}
 	};
 
-	// Load history when reaching step 5
+	// Load history when reaching step 5 AND in history viewing mode
 	$effect(() => {
-		if (currentStep === 5 && selectedStudent) {
+		if (currentStep === 5 && selectedStudent && isViewingHistory) {
 			loadSensorHistory();
 		}
 	});
@@ -462,19 +498,27 @@
 		</div>
 
 		<!-- Workflow Steps -->
-		<div class="bg-white dark:bg-surface-800 rounded-2xl shadow-lg p-6 mb-8">
-			<div class="flex justify-center items-center gap-4 overflow-x-auto">
+		<div class="bg-white dark:bg-surface-800 rounded-2xl shadow-lg p-4 md:p-8 mb-8">
+			<h3 class="text-center text-base md:text-lg font-semibold text-surface-900 dark:text-surface-50 mb-4 md:mb-6">
+				Langkah-langkah Monitoring Sensor
+			</h3>
+			<div class="flex justify-center items-center gap-1 md:gap-2 overflow-x-auto pb-2">
 				{#each steps as step, index}
 					<div class="flex items-center">
-						<div class="flex items-center gap-2 px-4 py-2 rounded-lg {step.number === currentStep ? 'bg-blue-500 text-white' : step.number < currentStep ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'}">
-							<span class="font-bold">{step.number}.</span>
-							<span class="font-medium whitespace-nowrap">{step.label}</span>
-							{#if step.number < currentStep}
-								<span class="text-green-600">✓</span>
-							{/if}
+						<div class="flex flex-col items-center text-center min-w-[80px] md:min-w-[120px]">
+							<div class="w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2 md:mb-3 text-sm md:text-lg font-bold {step.number === currentStep ? 'bg-blue-500 text-white shadow-lg' : step.number < currentStep ? 'bg-green-500 text-white' : 'bg-surface-200 dark:bg-surface-600 text-surface-600 dark:text-surface-400'}">
+								{#if step.number < currentStep}
+									✓
+								{:else}
+									{step.number}
+								{/if}
+							</div>
+							<span class="font-medium text-xs md:text-sm {step.number === currentStep ? 'text-blue-600 dark:text-blue-400' : step.number < currentStep ? 'text-green-600 dark:text-green-400' : 'text-surface-600 dark:text-surface-400'} leading-tight">
+								{$isMobile ? step.label.split(' ')[0] : step.label}
+							</span>
 						</div>
 						{#if index < steps.length - 1}
-							<ChevronRight class="w-5 h-5 text-surface-400 mx-2 flex-shrink-0" />
+							<div class="w-4 md:w-8 h-0.5 {step.number < currentStep ? 'bg-green-400' : 'bg-surface-300 dark:bg-surface-600'} mx-2 md:mx-4 mt-[-10px] md:mt-[-20px]"></div>
 						{/if}
 					</div>
 				{/each}
@@ -482,29 +526,37 @@
 		</div>
 
 		<!-- Main Content -->
-		<div class="bg-white dark:bg-surface-800 rounded-2xl shadow-lg p-8">
+		<div class="bg-white dark:bg-surface-800 rounded-2xl shadow-lg p-4 md:p-8">
 			<!-- Step 1: Student Profile Selection -->
 			{#if currentStep === 1}
 				<!-- Header -->
-				<div class="flex justify-between items-center mb-8">
-					<button 
-						class="btn preset-filled-surface-600 hover:scale-105"
-						onclick={manageProfiles}
-					>
-						Kelola Profil
-					</button>
-					
-					<h2 class="text-2xl font-bold text-surface-900 dark:text-surface-50">
+				<div class="text-center mb-8">
+					<h2 class="text-3xl font-bold text-surface-900 dark:text-surface-50 mb-4">
 						Pilih Profil Siswa
 					</h2>
+					<p class="text-surface-600 dark:text-surface-400 text-lg mb-6">
+						Klik pada profil siswa untuk memulai monitoring sensor
+					</p>
 					
-					<button 
-						class="btn preset-filled-primary-500 hover:scale-105 {!selectedStudent ? 'opacity-50 cursor-not-allowed' : ''}"
-						onclick={continueToDrum}
-						disabled={!selectedStudent}
-					>
-						Lanjut ke Drum
-					</button>
+					<div class="flex justify-center gap-4">
+						<button 
+							class="btn preset-outlined-surface-600 hover:scale-105 flex items-center gap-2"
+							onclick={manageProfiles}
+						>
+							<GraduationCap class="w-4 h-4" />
+							Kelola Profil
+						</button>
+						
+						{#if selectedStudent}
+							<button 
+								class="btn preset-filled-primary-500 hover:scale-105 flex items-center gap-2"
+								onclick={continueToDrum}
+							>
+								Lanjut ke Container
+								<ChevronRight class="w-4 h-4" />
+							</button>
+						{/if}
+					</div>
 				</div>
 
 				<!-- Student Profiles Grid -->
@@ -535,23 +587,23 @@
 						{/if}
 					</div>
 				{:else}
-					<div class="grid grid-cols-2 md:grid-cols-5 gap-6">
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
 						{#each students as student}
 							<button
-								class="group p-6 rounded-xl border-2 transition-all duration-200 hover:scale-105 {selectedStudent?.id === student.id 
+								class="group p-4 md:p-6 rounded-xl border-2 transition-all duration-200 hover:scale-105 {selectedStudent?.id === student.id 
 									? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-lg' 
 									: 'border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-700 hover:border-primary-300 hover:shadow-md'}"
 								onclick={() => selectStudent(student)}
 							>
 								<div class="text-center">
-									<div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-										<GraduationCap class="w-8 h-8 text-white" />
+									<div class="w-12 h-12 md:w-16 md:h-16 mx-auto mb-2 md:mb-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+										<GraduationCap class="w-6 h-6 md:w-8 md:h-8 text-white" />
 									</div>
-									<h3 class="font-bold text-surface-900 dark:text-surface-50 text-sm leading-tight">
-										{student.full_name}
+									<h3 class="font-bold text-surface-900 dark:text-surface-50 text-xs md:text-sm leading-tight">
+										{$isMobile ? student.full_name.split(' ').slice(0, 2).join(' ') : student.full_name}
 									</h3>
 									{#if selectedStudent?.id === student.id}
-										<div class="mt-2 text-xs text-primary-600 dark:text-primary-400 font-medium">
+										<div class="mt-1 md:mt-2 text-xs text-primary-600 dark:text-primary-400 font-medium">
 											✓ Terpilih
 										</div>
 									{/if}
@@ -562,35 +614,35 @@
 
 					<!-- Selected Student Info -->
 					{#if selectedStudent}
-						<div class="mt-8 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
-							<div class="flex items-center justify-between">
+						<div class="mt-6 md:mt-8 p-3 md:p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+							<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 								<div class="flex items-center gap-3">
-									<div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center">
-										<GraduationCap class="w-5 h-5 text-white" />
+									<div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary-500 flex items-center justify-center">
+										<GraduationCap class="w-4 h-4 md:w-5 md:h-5 text-white" />
 									</div>
 									<div>
-										<h4 class="font-bold text-surface-900 dark:text-surface-50">
-											Profil yang dipilih: {selectedStudent.full_name}
+										<h4 class="font-bold text-surface-900 dark:text-surface-50 text-sm md:text-base">
+											Profil yang dipilih: {$isMobile ? selectedStudent.full_name.split(' ').slice(0, 2).join(' ') : selectedStudent.full_name}
 										</h4>
-										<p class="text-sm text-surface-600 dark:text-surface-400">
+										<p class="text-xs md:text-sm text-surface-600 dark:text-surface-400">
 											Bergabung sejak {new Date(selectedStudent.created_at).toLocaleDateString('id-ID')}
 										</p>
 									</div>
 								</div>
-								<div class="flex gap-3">
+								<div class="flex flex-col sm:flex-row gap-2 md:gap-3">
 									<button 
-										class="btn preset-outlined-primary-500 hover:scale-105"
+										class="btn preset-outlined-primary-500 hover:scale-105 flex items-center justify-center gap-2 text-sm md:text-base"
 										onclick={viewHistory}
 									>
-										<Calendar class="w-4 h-4 mr-2" />
-										Lihat Riwayat
+										<Calendar class="w-3 h-3 md:w-4 md:h-4" />
+										{$isMobile ? 'Riwayat' : 'Lihat Riwayat'}
 									</button>
 									<button 
-										class="btn preset-filled-primary-500 hover:scale-105"
+										class="btn preset-filled-primary-500 hover:scale-105 flex items-center justify-center gap-2 text-sm md:text-base"
 										onclick={continueToDrum}
 									>
-										<TrendingUp class="w-4 h-4 mr-2" />
-										Pilih Container
+										<TrendingUp class="w-3 h-3 md:w-4 md:h-4" />
+										{$isMobile ? 'Container' : 'Pilih Container'}
 									</button>
 								</div>
 							</div>
@@ -617,23 +669,23 @@
 						</h3>
 					</div>
 				{:else}
-					<div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+					<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
 						{#each containers as container}
 							<button
-								class="group p-6 rounded-xl border-2 transition-all duration-200 hover:scale-105 {selectedContainer?.id === container.id 
+								class="group p-4 md:p-6 rounded-xl border-2 transition-all duration-200 hover:scale-105 {selectedContainer?.id === container.id 
 									? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg' 
 									: 'border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-700 hover:border-blue-300 hover:shadow-md'}"
 								onclick={() => selectContainer(container)}
 							>
 								<div class="text-center">
-									<div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg">
-										<Cylinder class="w-8 h-8 text-white" />
+									<div class="w-12 h-12 md:w-16 md:h-16 mx-auto mb-2 md:mb-3 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg">
+										<Cylinder class="w-6 h-6 md:w-8 md:h-8 text-white" />
 									</div>
-									<h3 class="font-bold text-surface-900 dark:text-surface-50 text-sm">
+									<h3 class="font-bold text-surface-900 dark:text-surface-50 text-xs md:text-sm">
 										{container.code}
 									</h3>
 									{#if selectedContainer?.id === container.id}
-										<div class="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+										<div class="mt-1 md:mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
 											✓ Terpilih
 										</div>
 									{/if}
@@ -643,12 +695,30 @@
 					</div>
 
 					{#if selectedContainer}
-						<div class="flex justify-center">
+						<div class="flex justify-center gap-4">
 							<button 
-								class="btn preset-filled-primary-500 hover:scale-105"
+								class="btn preset-outlined-surface-600 hover:scale-105 flex items-center gap-2"
+								onclick={goBackToProfile}
+							>
+								<ChevronLeft class="w-4 h-4" />
+								Kembali ke Profil
+							</button>
+							<button 
+								class="btn preset-filled-primary-500 hover:scale-105 flex items-center gap-2"
 								onclick={continueToTHG}
 							>
 								Lanjut ke Input THG
+								<ChevronRight class="w-4 h-4" />
+							</button>
+						</div>
+					{:else}
+						<div class="flex justify-center">
+							<button 
+								class="btn preset-outlined-surface-600 hover:scale-105 flex items-center gap-2"
+								onclick={goBackToProfile}
+							>
+								<ChevronLeft class="w-4 h-4" />
+								Kembali ke Profil
 							</button>
 						</div>
 					{/if}
@@ -663,33 +733,49 @@
 					<p class="text-surface-600 dark:text-surface-400 mb-2">
 						Container: <strong>{selectedContainer?.code}</strong> | Siswa: <strong>{selectedStudent?.full_name}</strong>
 					</p>
-					<p class="text-surface-500 dark:text-surface-400 text-sm">
-						Semua field di bawah ini bersifat opsional. Anda dapat mengisi sebagian atau melewatkan semuanya.
+					<p class="text-surface-500 dark:text-surface-400 text-lg">
+						✨ Semua field bersifat opsional - Isi sesuai kebutuhan
 					</p>
 				</div>
 
-				<div class="max-w-2xl mx-auto">
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="max-w-4xl mx-auto px-2 md:px-0">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
 						<!-- Temperature -->
-						<div>
-							<label for="temperature" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-								Suhu (°C) <span class="text-surface-400 text-xs">(opsional)</span>
-							</label>
+						<div class="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-200 dark:border-red-700 p-6 rounded-xl shadow-lg">
+							<div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+								<div class="w-10 h-10 sm:w-12 sm:h-12 bg-red-500 rounded-full flex items-center justify-center">
+									<Thermometer class="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+								</div>
+								<div>
+									<label for="temperature" class="block text-base sm:text-lg font-bold text-red-700 dark:text-red-300">
+										Suhu (°C)
+									</label>
+									<span class="text-red-500 dark:text-red-400 text-xs sm:text-sm">Temperature - opsional</span>
+								</div>
+							</div>
 							<input 
 								id="temperature"
 								type="number" 
 								step="0.1"
 								bind:value={sensorFormData.temperature}
-								class="input w-full"
-								placeholder="Masukkan suhu (opsional)"
+								class="input w-full text-base sm:text-lg h-10 sm:h-12 placeholder:text-surface-200 dark:placeholder:text-surface-700 border-red-300 focus:border-red-500 focus:ring-red-500"
+								placeholder="Contoh: 25.5"
 							>
 						</div>
 
 						<!-- Humidity -->
-						<div>
-							<label for="humidity" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-								Kelembaban (%) <span class="text-surface-400 text-xs">(opsional)</span>
-							</label>
+						<div class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-2 border-blue-200 dark:border-blue-700 p-4 sm:p-6 rounded-xl shadow-lg">
+							<div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+								<div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center">
+									<Zap class="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+								</div>
+								<div>
+									<label for="humidity" class="block text-base sm:text-lg font-bold text-blue-700 dark:text-blue-300">
+										Kelembaban (%)
+									</label>
+									<span class="text-blue-500 dark:text-blue-400 text-xs sm:text-sm">Humidity - opsional</span>
+								</div>
+							</div>
 							<input 
 								id="humidity"
 								type="number" 
@@ -697,32 +783,48 @@
 								min="0"
 								max="100"
 								bind:value={sensorFormData.humidity}
-								class="input w-full"
-								placeholder="Masukkan kelembaban (opsional)"
+								class="input w-full text-base sm:text-lg h-10 sm:h-12 placeholder:text-surface-200 dark:placeholder:text-surface-700 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+								placeholder="Contoh: 65.2"
 							>
 						</div>
 
 						<!-- Gas -->
-						<div>
-							<label for="gas" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-								Gas Reading <span class="text-surface-400 text-xs">(opsional)</span>
-							</label>
+						<div class="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-2 border-purple-200 dark:border-purple-700 p-4 sm:p-6 rounded-xl shadow-lg">
+							<div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+								<div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500 rounded-full flex items-center justify-center">
+									<Activity class="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+								</div>
+								<div>
+									<label for="gas" class="block text-base sm:text-lg font-bold text-purple-700 dark:text-purple-300">
+										Gas Reading
+									</label>
+									<span class="text-purple-500 dark:text-purple-400 text-xs sm:text-sm">Gas Level - opsional</span>
+								</div>
+							</div>
 							<input 
 								id="gas"
 								type="number" 
 								step="0.1"
 								min="0"
 								bind:value={sensorFormData.gas}
-								class="input w-full"
-								placeholder="Masukkan pembacaan gas (opsional)"
+								class="input w-full text-base sm:text-lg h-10 sm:h-12 placeholder:text-surface-200 dark:placeholder:text-surface-700 border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+								placeholder="Contoh: 450"
 							>
 						</div>
 
 						<!-- pH -->
-						<div>
-							<label for="ph" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-								pH Level <span class="text-surface-400 text-xs">(opsional)</span>
-							</label>
+						<div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 p-4 sm:p-6 rounded-xl shadow-lg">
+							<div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+								<div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-500 rounded-full flex items-center justify-center">
+									<TrendingUp class="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+								</div>
+								<div>
+									<label for="ph" class="block text-base sm:text-lg font-bold text-green-700 dark:text-green-300">
+										pH Level
+									</label>
+									<span class="text-green-500 dark:text-green-400 text-xs sm:text-sm">Acidity Level - opsional</span>
+								</div>
+							</div>
 							<input 
 								id="ph"
 								type="number" 
@@ -730,69 +832,91 @@
 								min="0"
 								max="14"
 								bind:value={sensorFormData.ph}
-								class="input w-full"
-								placeholder="Masukkan pH (opsional)"
+								class="input w-full text-base sm:text-lg h-10 sm:h-12 placeholder:text-surface-200 dark:placeholder:text-surface-700 border-green-300 focus:border-green-500 focus:ring-green-500"
+								placeholder="Contoh: 7.2"
 							>
 						</div>
 					</div>
 
-					<div class="flex justify-center mt-8">
+					<div class="flex justify-center gap-2 sm:gap-4 mt-6 sm:mt-8">
 						<button 
-							class="btn preset-filled-primary-500 hover:scale-105"
+							class="btn preset-outlined-surface-600 hover:scale-105 flex items-center gap-1 sm:gap-2 text-sm sm:text-base px-3 sm:px-4 py-2"
+							onclick={goBackToDrum}
+						>
+							<ChevronLeft class="w-3 h-3 sm:w-4 sm:h-4" />
+							{$isMobile ? 'Container' : 'Kembali ke Container'}
+						</button>
+						<button 
+							class="btn preset-filled-primary-500 hover:scale-105 flex items-center gap-1 sm:gap-2 text-sm sm:text-base px-3 sm:px-4 py-2"
 							onclick={continueToColor}
 						>
-							Lanjut ke Pilih Warna
+							{$isMobile ? 'Pilih Warna' : 'Lanjut ke Pilih Warna'}
+							<ChevronRight class="w-3 h-3 sm:w-4 sm:h-4" />
 						</button>
 					</div>
 				</div>
 
 			<!-- Step 4: Color/Status Selection -->
 			{:else if currentStep === 4}
-				<div class="text-center mb-8">
-					<h2 class="text-2xl font-bold text-surface-900 dark:text-surface-50 mb-2">
+				<div class="text-center mb-6 sm:mb-8">
+					<h2 class="text-xl sm:text-2xl font-bold text-surface-900 dark:text-surface-50 mb-2">
 						Pilih Status Warna
 					</h2>
-					<p class="text-surface-600 dark:text-surface-400">
+					<p class="text-surface-600 dark:text-surface-400 mb-3 sm:mb-4 text-sm sm:text-base">
 						Pilih warna sesuai dengan kondisi sensor
+					</p>
+					<p class="text-surface-500 dark:text-surface-400 text-xs sm:text-sm">
+						Container: <strong>{selectedContainer?.code}</strong> | Siswa: <strong>{selectedStudent?.full_name}</strong>
 					</p>
 				</div>
 
-				<div class="flex justify-center items-center gap-12 mb-8">
+				<!-- Back Button -->
+				<div class="flex justify-center mb-4 sm:mb-6">
+					<button 
+						class="btn preset-outlined-surface-600 hover:scale-105 flex items-center gap-1 sm:gap-2 text-sm sm:text-base px-3 sm:px-4 py-2"
+						onclick={goBackToTHG}
+					>
+						<ChevronLeft class="w-3 h-3 sm:w-4 sm:h-4" />
+						{$isMobile ? 'Input Data' : 'Kembali ke Input Data'}
+					</button>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 mb-6 sm:mb-8 max-w-4xl mx-auto">
 					<!-- Red Status -->
 					<button
-						class="group text-center p-6 rounded-xl border-2 border-red-200 hover:border-red-400 hover:scale-105 transition-all"
+						class="group text-center p-4 sm:p-8 rounded-2xl border-4 border-red-200 hover:border-red-400 hover:scale-105 transition-all bg-white dark:bg-surface-800 shadow-lg"
 						onclick={() => submitSensorData('red')}
 					>
-						<div class="w-20 h-20 bg-red-500 rounded-full mb-4 mx-auto shadow-lg group-hover:shadow-xl"></div>
-						<div class="text-red-600 font-bold text-lg">MERAH</div>
-						<div class="text-surface-600 dark:text-surface-400 text-sm">Belum Siap</div>
+						<div class="w-16 h-16 sm:w-24 sm:h-24 bg-red-500 rounded-full mb-3 sm:mb-6 mx-auto shadow-lg group-hover:shadow-xl group-hover:bg-red-600 transition-all"></div>
+						<div class="text-red-600 font-bold text-lg sm:text-2xl mb-1 sm:mb-2">MERAH</div>
+						<div class="text-surface-600 dark:text-surface-400 text-base sm:text-lg font-medium">Belum Siap</div>
 					</button>
 					
 					<!-- Yellow Status -->
 					<button
-						class="group text-center p-6 rounded-xl border-2 border-yellow-200 hover:border-yellow-400 hover:scale-105 transition-all"
+						class="group text-center p-4 sm:p-8 rounded-2xl border-4 border-yellow-200 hover:border-yellow-400 hover:scale-105 transition-all bg-white dark:bg-surface-800 shadow-lg"
 						onclick={() => submitSensorData('yellow')}
 					>
-						<div class="w-20 h-20 bg-yellow-500 rounded-full mb-4 mx-auto shadow-lg group-hover:shadow-xl"></div>
-						<div class="text-yellow-600 font-bold text-lg">KUNING</div>
-						<div class="text-surface-600 dark:text-surface-400 text-sm">Hampir Siap</div>
+						<div class="w-16 h-16 sm:w-24 sm:h-24 bg-yellow-500 rounded-full mb-3 sm:mb-6 mx-auto shadow-lg group-hover:shadow-xl group-hover:bg-yellow-600 transition-all"></div>
+						<div class="text-yellow-600 font-bold text-lg sm:text-2xl mb-1 sm:mb-2">KUNING</div>
+						<div class="text-surface-600 dark:text-surface-400 text-base sm:text-lg font-medium">Hampir Siap</div>
 					</button>
 					
 					<!-- Green Status -->
 					<button
-						class="group text-center p-6 rounded-xl border-2 border-green-200 hover:border-green-400 hover:scale-105 transition-all"
+						class="group text-center p-4 sm:p-8 rounded-2xl border-4 border-green-200 hover:border-green-400 hover:scale-105 transition-all bg-white dark:bg-surface-800 shadow-lg"
 						onclick={() => submitSensorData('green')}
 					>
-						<div class="w-20 h-20 bg-green-500 rounded-full mb-4 mx-auto shadow-lg group-hover:shadow-xl"></div>
-						<div class="text-green-600 font-bold text-lg">HIJAU</div>
-						<div class="text-surface-600 dark:text-surface-400 text-sm">Sudah Siap</div>
+						<div class="w-16 h-16 sm:w-24 sm:h-24 bg-green-500 rounded-full mb-3 sm:mb-6 mx-auto shadow-lg group-hover:shadow-xl group-hover:bg-green-600 transition-all"></div>
+						<div class="text-green-600 font-bold text-lg sm:text-2xl mb-1 sm:mb-2">HIJAU</div>
+						<div class="text-surface-600 dark:text-surface-400 text-base sm:text-lg font-medium">Sudah Siap</div>
 					</button>
 				</div>
 
 				<!-- Data Summary -->
 				<div class="max-w-2xl mx-auto bg-surface-50 dark:bg-surface-700 rounded-lg p-6">
-					<h4 class="font-medium text-surface-900 dark:text-surface-50 mb-4">Ringkasan Data:</h4>
-					<div class="grid grid-cols-2 gap-4 text-sm">
+					<h4 class="font-medium text-surface-900 dark:text-surface-50 mb-3 sm:mb-4 text-sm sm:text-base">Ringkasan Data:</h4>
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
 						<div>Siswa: <strong>{selectedStudent?.full_name}</strong></div>
 						<div>Container: <strong>{selectedContainer?.code}</strong></div>
 						{#if sensorFormData.temperature !== null}
@@ -814,99 +938,99 @@
 			{:else if currentStep === 5}
 				<!-- Success Message (only show if coming from workflow) -->
 				{#if selectedContainer}
-					<div class="text-center mb-8">
-						<div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-							<TrendingUp class="w-10 h-10 text-white" />
+					<div class="text-center mb-6 sm:mb-8">
+						<div class="w-16 h-16 sm:w-20 sm:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+							<TrendingUp class="w-8 h-8 sm:w-10 sm:h-10 text-white" />
 						</div>
-						<h2 class="text-2xl font-bold text-surface-900 dark:text-surface-50 mb-4">
+						<h2 class="text-xl sm:text-2xl font-bold text-surface-900 dark:text-surface-50 mb-3 sm:mb-4">
 							Data Berhasil Disimpan!
 						</h2>
-						<p class="text-surface-600 dark:text-surface-400 mb-8">
+						<p class="text-surface-600 dark:text-surface-400 mb-6 sm:mb-8 text-sm sm:text-base px-4 sm:px-0">
 							Data sensor untuk {selectedStudent?.full_name} pada container {selectedContainer?.code} telah berhasil disimpan.
 						</p>
-						<div class="flex justify-center gap-4 mb-8">
+						<div class="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-6 sm:mb-8 px-4 sm:px-0">
 							<button 
-								class="btn preset-filled-primary-500 hover:scale-105"
-								onclick={() => { currentStep = 1; selectedStudent = null; selectedContainer = null; sensorFormData = { temperature: null, humidity: null, gas: null, ph: null, status: '' }; sensorHistory = []; }}
+								class="btn preset-filled-primary-500 hover:scale-105 flex items-center justify-center gap-1 sm:gap-2 text-base sm:text-lg px-4 sm:px-6 py-2 sm:py-3"
+								onclick={startFresh}
 							>
-								Input Data Baru
+								<TrendingUp class="w-4 h-4 sm:w-5 sm:h-5" />
+								{$isMobile ? 'Data Baru' : 'Input Data Baru'}
 							</button>
 							{#if authState.isAuthenticated}
 								<button 
-									class="btn preset-outlined-primary-500 hover:scale-105"
+									class="btn preset-outlined-primary-500 hover:scale-105 flex items-center justify-center gap-1 sm:gap-2 text-base sm:text-lg px-4 sm:px-6 py-2 sm:py-3"
 									onclick={() => goto('/dashboard/sensor-data')}
 								>
-									Dashboard Lengkap
+									<Activity class="w-4 h-4 sm:w-5 sm:h-5" />
+									{$isMobile ? 'Dashboard' : 'Dashboard Lengkap'}
 								</button>
 							{/if}
 						</div>
 					</div>
 				{:else}
 					<!-- History View Header (when coming directly from Step 1) -->
-					<div class="text-center mb-8">
-						<div class="flex items-center justify-center gap-3 mb-4">
-							<Calendar class="w-12 h-12 text-primary-600" />
-							<h2 class="text-2xl font-bold text-surface-900 dark:text-surface-50">
+					<div class="text-center mb-6 sm:mb-8">
+						<div class="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+							<Calendar class="w-8 h-8 sm:w-12 sm:h-12 text-primary-600" />
+							<h2 class="text-xl sm:text-2xl font-bold text-surface-900 dark:text-surface-50">
 								Riwayat Data Sensor
 							</h2>
 						</div>
-						<p class="text-surface-600 dark:text-surface-400 mb-6">
+						<p class="text-surface-600 dark:text-surface-400 mb-4 sm:mb-6 text-sm sm:text-base">
 							Siswa: <strong>{selectedStudent?.full_name}</strong>
 						</p>
-						<div class="flex justify-center gap-4">
+						<div class="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0">
 							<button 
-								class="btn preset-outlined-primary-500 hover:scale-105"
-								onclick={() => { currentStep = 1; sensorHistory = []; }}
+								class="btn preset-outlined-surface-600 hover:scale-105 flex items-center justify-center gap-1 sm:gap-2 text-base sm:text-lg px-4 sm:px-6 py-2 sm:py-3"
+								onclick={() => { currentStep = 1; sensorHistory = []; isViewingHistory = false; }}
 							>
-								Kembali ke Profil
+								<ChevronLeft class="w-4 h-4 sm:w-5 sm:h-5" />
+								{$isMobile ? 'Profil' : 'Kembali ke Profil'}
 							</button>
 							<button 
-								class="btn preset-filled-primary-500 hover:scale-105"
-								onclick={continueToDrum}
+								class="btn preset-filled-primary-500 hover:scale-105 flex items-center justify-center gap-1 sm:gap-2 text-base sm:text-lg px-4 sm:px-6 py-2 sm:py-3"
+								onclick={() => { isViewingHistory = false; continueToDrum(); }}
 							>
-								Input Data Baru
+								<TrendingUp class="w-4 h-4 sm:w-5 sm:h-5" />
+								{$isMobile ? 'Data Baru' : 'Input Data Baru'}
 							</button>
 						</div>
 					</div>
 				{/if}
 
-				<!-- Sensor History Section -->
-				<div class="{selectedContainer ? 'mt-12' : 'mt-8'}">
-					<div class="flex items-center gap-3 mb-6">
-						<Calendar class="w-6 h-6 text-primary-600" />
-						<h3 class="text-xl font-bold text-surface-900 dark:text-surface-50">
-							{selectedContainer ? 'Riwayat Data Sensor' : 'Semua Data Sensor'}
-						</h3>
-						{#if selectedContainer}
-							<span class="text-sm text-surface-500 dark:text-surface-400">
-								Container: {selectedContainer?.code}
-							</span>
-						{/if}
+				<!-- Sensor History Section (only show when viewing history) -->
+				{#if isViewingHistory}
+					<div class="{selectedContainer ? 'mt-8 sm:mt-12' : 'mt-6 sm:mt-8'}">
+						<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6 px-4 sm:px-0">
+							<div class="flex items-center gap-2 sm:gap-3">
+								<Calendar class="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
+								<h3 class="text-lg sm:text-xl font-bold text-surface-900 dark:text-surface-50">
+									{selectedContainer ? 'Riwayat Data Sensor' : 'Semua Data Sensor'}
+								</h3>
+							</div>
+							{#if selectedContainer}
+								<span class="text-xs sm:text-sm text-surface-500 dark:text-surface-400">
+									Container: {selectedContainer?.code}
+								</span>
+							{/if}
+						</div>
+						
+						<div class="overflow-x-auto -mx-4 sm:mx-0">
+							<div class="min-w-full px-4 sm:px-0">
+								<DataTable
+									data={sensorHistory}
+									columns={historyColumns}
+									loading={historyLoading}
+									emptyIcon={Thermometer}
+									emptyTitle="Belum ada data sensor"
+									emptyDescription="Data sensor untuk container ini akan muncul di sini setelah ada data yang diinput"
+									keyField="id"
+									defaultSort={{ column: 'created_at', direction: 'desc' }}
+								/>
+							</div>
+						</div>
 					</div>
-					
-					<DataTable
-						data={sensorHistory}
-						columns={historyColumns}
-						loading={historyLoading}
-						emptyIcon={Thermometer}
-						emptyTitle="Belum ada data sensor"
-						emptyDescription="Data sensor untuk container ini akan muncul di sini setelah ada data yang diinput"
-						keyField="id"
-						defaultSort={{ column: 'created_at', direction: 'desc' }}
-					/>
-				</div>
-			{/if}
-		</div>
-
-		<!-- Footer -->
-		<div class="text-center mt-8 text-surface-600 dark:text-surface-400">
-			<p class="text-sm">
-				Sistem Monitoring Sensor Damayanti
-			</p>
-			{#if !authState.isAuthenticated}
-				<button class="text-primary-600 hover:text-primary-700 text-sm font-medium mt-1" onclick={goToLogin}>
-					Login untuk akses penuh sistem
-				</button>
+				{/if}
 			{/if}
 		</div>
 	</div>
