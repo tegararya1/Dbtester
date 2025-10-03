@@ -5,7 +5,8 @@
 	import { getStudents, type Student } from '$lib/api/students';
 	import { getLatestSensorData, type SensorData, createSensorData, type SensorDataFormData, getSensorData } from '$lib/api/sensor-data';
 	import { getContainers, type Container } from '$lib/api/containers';
-	import { GraduationCap, ChevronRight, Activity, TrendingUp, Zap, Calendar, Thermometer } from 'lucide-svelte';
+	import { createReport } from '$lib/api/reports';
+	import { GraduationCap, ChevronRight, Activity, TrendingUp, Zap, Calendar, Thermometer, Cylinder } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import DataTable from '$lib/ui/datatable/datatable.svelte';
 
@@ -224,6 +225,29 @@
 			const response = await createSensorData(filteredData);
 			
 			if (response.message) {
+				// If sensor data was created successfully, also create a report
+				if (selectedStudent && selectedContainer) {
+					try {
+						// Get the latest sensor data to obtain the ID for the report
+						const latestResponse = await getLatestSensorData(selectedContainer.id);
+						
+						if (latestResponse.data) {
+							const reportData = {
+								student_id: selectedStudent.id,
+								container_id: selectedContainer.id,
+								sensor_data_id: latestResponse.data.id,
+								notes: `Status: ${status} - Created via sensor monitoring interface`
+							};
+							
+							await createReport(reportData);
+							// No need to handle report response - just create it silently
+						}
+					} catch (reportError) {
+						// Silent failure for report creation - don't show error to user
+						console.error('Error creating report (background):', reportError);
+					}
+				}
+				
 				toast.success('Sensor data submitted successfully!');
 				goToStep(5);
 			} else {
@@ -603,7 +627,7 @@
 							>
 								<div class="text-center">
 									<div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg">
-										<Activity class="w-8 h-8 text-white" />
+										<Cylinder class="w-8 h-8 text-white" />
 									</div>
 									<h3 class="font-bold text-surface-900 dark:text-surface-50 text-sm">
 										{container.code}
