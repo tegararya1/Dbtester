@@ -6,6 +6,7 @@
 	import { page } from '$app/state';
 	import { Toaster } from 'svelte-sonner';
 	import { themeStore } from '$lib/stores/theme';
+	import Navbar from '$lib/ui/navbar/navbar.svelte';
 
 	let { children } = $props();
 
@@ -28,5 +29,8 @@
 {#if page.error?.message}
 	<Error status={page.status} message={page.error.message} />
 {:else}
+	{#if !page.url.pathname.startsWith('/dashboard')}
+		<Navbar />
+	{/if}
 	{@render children?.()}
 {/if}
